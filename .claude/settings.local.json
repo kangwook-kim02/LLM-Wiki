@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:gist.githubusercontent.com)",
+      "Bash(curl -s \"https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\ices1\\\\CSE3308\\\\project\\\\Agentic_Coding_Basics\\\\raw\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\ices1\\\\CSE3308\\\\project\\\\Agentic_Coding_Basics\\\\wiki\")",
+      "Bash(Move-Item \"*.pdf\" \"raw/\")"
+    ]
+  }
+}

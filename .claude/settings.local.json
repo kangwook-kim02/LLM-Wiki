@@ -7,7 +7,13 @@
       "Bash(curl -s \"https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw\")",
       "Bash(mkdir -p \"C:\\\\Users\\\\ices1\\\\CSE3308\\\\project\\\\Agentic_Coding_Basics\\\\raw\")",
       "Bash(mkdir -p \"C:\\\\Users\\\\ices1\\\\CSE3308\\\\project\\\\Agentic_Coding_Basics\\\\wiki\")",
-      "Bash(Move-Item \"*.pdf\" \"raw/\")"
+      "Bash(Move-Item \"*.pdf\" \"raw/\")",
+      "Bash(python -c \"import pypdf; print\\('pypdf available'\\)\")",
+      "Bash(python -c \"import PyPDF2; print\\('PyPDF2 available'\\)\")",
+      "Bash(python -c \"import pdfplumber; print\\('pdfplumber available'\\)\")",
+      "Bash(pip install *)",
+      "Bash(python *)",
+      "Bash(git add *)"
     ]
   }
 }

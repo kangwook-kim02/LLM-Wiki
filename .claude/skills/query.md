@@ -1,20 +1,9 @@
 ---
-skill: query
-version: 1.0
+name: query
+description: LLM Wiki를 기반으로 질문에 답하는 스킬. ingest 스킬 트리거에 해당하지 않는 모든 질문 — 개념 설명, 비교, 패턴 추천, "~가 뭐야?", "~의 차이", "~는 언제 써?" 등 위키 내용에 대한 지식 조회 요청 시 반드시 이 스킬을 사용한다.
 ---
 
 # Skill: query
-
-## 트리거
-
-ingest / lint 트리거에 해당하지 않는 **모든 질문**에 이 스킬을 적용한다.
-
-- 예시:
-  - `"Plan Mode가 뭐야?"`
-  - `"Hook과 Loop의 차이가 뭔가요?"`
-  - `"Orchestrator 패턴은 언제 써?"`
-
----
 
 ## 절차
 

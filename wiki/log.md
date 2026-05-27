@@ -57,7 +57,14 @@
 
 ### 미생성 페이지 (향후 인제스트 시 생성 권장)
 
-다음 개념들이 소스에서 언급되었으나 아직 개별 페이지가 없음:
+~~다음 개념들이 소스에서 언급되었으나 아직 개별 페이지가 없음~~ → 2026-05-27 전체 생성 완료.
+
+---
+
+## [2026-05-27] 미생성 페이지 13개 보완
+
+### 생성된 개념 페이지 (11개)
+
 - `wiki/concepts/sdlc.md`
 - `wiki/concepts/prd.md`
 - `wiki/concepts/sequential-agent.md`
@@ -69,5 +76,12 @@
 - `wiki/concepts/skill.md`
 - `wiki/concepts/subprocess.md`
 - `wiki/concepts/loop.md`
+
+### 생성된 엔티티 페이지 (2개)
+
 - `wiki/entities/andrej-karpathy.md`
 - `wiki/entities/fastmcp.md`
+
+### 업데이트
+
+- `wiki/index.md` 전체 업데이트 (20 → 33개 페이지 등록)

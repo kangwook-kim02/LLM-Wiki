@@ -61,13 +61,24 @@ agents/verify-agent.md 의 절차를 따른다.
 ```bash
 git add {impl-agent가 변경한 파일들}
 git commit -m "#{$ISSUE_N} {$ISSUE_TITLE}"
+gh pr create \
+  --title "{$ISSUE_TITLE}" \
+  --body "$(cat <<'EOF'
+## Summary
+- closes #{$ISSUE_N}
+- {변경 파일 및 구현 내용 bullet}
+
+## Test plan
+- [ ] {verify-agent 검증 항목}
+EOF
+)"
 ```
 
 사용자에게 보고:
 ```
 ✅ 이슈 #$ISSUE_N 구현 및 검증 완료
 커밋: #{SHA}
-PR을 생성하려면: "PR 만들어줘"
+PR: {PR URL}
 ```
 
 **FAIL인 경우 (1회 재시도):**
@@ -108,4 +119,5 @@ verify-agent의 수정 제안을 포함하여 impl-agent를 재스폰한다:
 - impl → verify 순서는 반드시 지킨다 (역방향 불가)
 - 자동 재시도는 최대 1회
 - 재시도 후 실패 시 사용자 판단에 위임한다
-- 사용자 승인 없이 `git push` 또는 PR 생성 금지
+- 커밋 후 PR은 자동으로 생성한다 (사용자 요청 불필요)
+- 사용자 승인 없이 `git push --force` 또는 머지 금지

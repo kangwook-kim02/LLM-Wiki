@@ -301,8 +301,72 @@ orchestrate (skill)
 
 ---
 
+---
+
+## Round 8 — /health 커맨드 신설 및 명칭 확정
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 결정 사항
+
+1. **하네스 검증 커맨드 신설**: `.claude/commands/validate-harness.md` 생성
+   - 6개 항목 점검: 필수 파일 / 스킬 frontmatter / 에이전트 frontmatter / CLAUDE.md 일관성 / orchestrate 연결 / decision-log 최신성
+
+2. **명칭 변경**: `validate-harness` → `health`
+   - 이유: 입력 편의성 (`/health`가 더 짧고 직관적)
+   - 파일명 `health.md`, 커맨드 헤더도 `# /health`로 변경
+
+3. **로그 저장 기능 추가**: 점검 결과를 `docs/health/YYYY-MM-DD.md`로 자동 저장
+   - 같은 날 재실행 시 `-2`, `-3` suffix
+   - 점검 이력을 git으로 추적
+
+**영향 받은 파일:**
+- `.claude/commands/health.md` — 신규 생성 (validate-harness.md 대체)
+- `CLAUDE.md` — 커맨드 섹션 추가, 디렉토리 구조에 `docs/health/` 추가
+- `README.md` — 커맨드 테이블 추가
+
+---
+
+## Round 9 — 세션 운영 전략 결정
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 질문
+
+"매번 새로운 세션에서 작업하는 게 좋을까요, 아니면 `claude --resume`에서 작업하는 게 좋을까요?"
+
+### 논의
+
+**이 하네스의 설계 원칙 확인:**
+- `CLAUDE.md`, `decision-log.md`, 스킬·에이전트 명세가 모두 파일에 기록됨
+- 에이전트가 매 세션 시작 시 파일에서 프로젝트 상태를 복원 가능
+- 즉, 세션 간 연속성을 파일 시스템이 대신 제공함
+
+**결론:**
+
+| 상황 | 방식 |
+|---|---|
+| 새 이슈 작업 시작 | 새 세션 |
+| 이슈 작업 도중 compact 발생 | --resume |
+| 이슈 완료 후 다음 이슈 | 새 세션 |
+| 간단한 Wiki 질의/편집 | 새 세션 |
+
+### 결정
+
+**이슈 단위 = 세션 단위** 패턴 채택
+
+- `github-issue-work` 스킬이 이슈 단위 작업으로 설계되어 있으므로 자연스럽게 일치
+- `--resume`은 mid-task 중단 복구 용도로만 사용
+- compact가 발생할 만큼 한 이슈가 길어진다면 이슈를 더 작게 쪼개는 신호로 간주
+
+**영향 받은 파일:** 없음 (운영 방침 결정)
+
+---
+
 ## 향후 라운드 예정
 
-- **Round 8**: MCP 서버 구현 세부 결정 (wiki_store 및 raw_store 설계)
-- **Round 9**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식)
-- **Round 10**: 최초 인제스트 소스 선정 및 실행
+- **Round 10**: MCP 서버 구현 세부 결정 (wiki_store 및 raw_store 설계)
+- **Round 11**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식)
+- **Round 12**: 최초 인제스트 소스 선정 및 실행

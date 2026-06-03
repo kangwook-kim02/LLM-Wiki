@@ -33,12 +33,67 @@
           <p class="sidebar-empty">페이지가 없습니다.</p>
         {% endif %}
       </nav>
+
+      <!-- 파일 업로드 폼 (V-03) -->
+      <div class="upload-section">
+        <div class="upload-section-label">파일 업로드</div>
+        <form id="upload-form" enctype="multipart/form-data">
+          <label class="upload-file-label" for="upload-file-input">
+            파일 선택
+          </label>
+          <input
+            id="upload-file-input"
+            type="file"
+            name="file"
+            accept=".pdf,.md,.txt"
+            class="upload-file-input"
+          />
+          <span id="upload-file-name" class="upload-file-name">선택된 파일 없음</span>
+          <button type="submit" class="upload-btn">업로드</button>
+        </form>
+        <div id="upload-result" class="upload-result" aria-live="polite"></div>
+      </div>
     </aside>
 
     <!-- 본문 패널 (V-02) -->
     <main class="main-content">
       {% block content %}{% endblock %}
     </main>
+
+    <!-- 채팅 패널 (V-04) -->
+    <section class="chat-panel" aria-label="채팅">
+      <div class="chat-panel-header">Claude 채팅</div>
+
+      <div class="chat-messages" id="chat-messages" aria-live="polite">
+        <div class="chat-bubble assistant">
+          안녕하세요! Wiki에 대해 질문하거나 "인제스트해줘"처럼 작업을 요청하세요.
+        </div>
+      </div>
+
+      <!-- 로딩 스피너 -->
+      <div class="chat-spinner" id="chat-spinner" aria-hidden="true">
+        <div class="spinner-dot"></div>
+        <div class="spinner-dot"></div>
+        <div class="spinner-dot"></div>
+      </div>
+
+      <!-- 입력 영역 -->
+      <div class="chat-input-area">
+        <form id="chat-form">
+          <textarea
+            id="chat-input"
+            name="message"
+            class="chat-textarea"
+            placeholder="메시지를 입력하세요…"
+            rows="2"
+            aria-label="채팅 입력"
+          ></textarea>
+          <button type="submit" class="chat-send-btn" aria-label="전송">전송</button>
+        </form>
+      </div>
+    </section>
   </div>
+
+  <script src="{{ url_for('static', filename='chat.js') }}"></script>
 </body>
 </html>

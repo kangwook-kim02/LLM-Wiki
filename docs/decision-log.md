@@ -842,3 +842,48 @@ orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 �
 - `viewer/static/style.css` — 신규
 - `.mcp.json` — 신규
 - `requirements.txt` — 의존성 추가
+
+---
+
+## Round 23 — 채팅 패널 subprocess 설계 세부 결정
+
+**날짜**: 2026-06-04
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+이슈 #7 작업: Flask 파일 업로드 + claude -p subprocess 채팅 패널 구현 (Round 20 결정 실행)
+
+### 결정 사항
+
+**Q1. subprocess timeout 값?**
+
+- **결론**: `timeout=120` (2분). 인제스트처럼 MCP 도구를 여러 번 호출하는 작업이 길어질 수 있음.
+- TimeoutExpired, FileNotFoundError, 일반 Exception 세 경우를 각각 처리하여 한국어 오류 메시지 반환.
+
+**Q2. 파일 업로드 — MCP `raw_save` 경유 vs 직접 호출?**
+
+- **결론**: `wiki_store.raw_save(filename, bytes)` 직접 호출 (MCP 불필요). Round 20 결정 유지.
+- 근거: 뷰어 서버가 같은 프로세스에서 wiki_store를 import하므로 MCP 경유는 오버헤드.
+
+**Q3. 채팅 패널 스트리밍 여부?**
+
+- **결론**: MVP 비스트리밍 유지. AJAX fetch → JSON 응답 방식.
+- 근거: Round 20 결정 유지. 스트리밍은 SSE/WebSocket 추가 구현 필요, 현재 범위 초과.
+
+**Q4. 3패널 레이아웃 반응형 처리?**
+
+- **결론**: 1024px 이하 화면에서 채팅 패널 숨김. 모바일에서는 2패널(사이드바 + 본문)로 fallback.
+
+### 구현 결과
+
+- `viewer/app.py` — /upload, /chat 라우트 추가
+- `viewer/templates/layout.html` — 3패널 레이아웃 (sidebar + main + chat-panel)
+- `viewer/static/style.css` — 채팅 버블, 스피너, 업로드 폼 스타일
+- `viewer/static/chat.js` — 신규 생성, fetch 기반 채팅·업로드 처리
+
+**영향 받은 파일:**
+- `viewer/app.py` — /upload, /chat 라우트 추가
+- `viewer/templates/layout.html` — 3패널 구조로 변경
+- `viewer/static/style.css` — 채팅 패널 스타일 추가
+- `viewer/static/chat.js` — 신규 생성

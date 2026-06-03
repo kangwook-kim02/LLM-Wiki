@@ -2,13 +2,16 @@
 viewer/app.py — Flask 기반 Wiki 뷰어
 
 라우팅:
-  GET /               → 첫 번째 페이지로 redirect, 페이지 없으면 빈 상태
-  GET /page/<slug>    → Markdown 렌더링 페이지 표시
+  GET  /               → 첫 번째 페이지로 redirect, 페이지 없으면 빈 상태
+  GET  /page/<slug>    → Markdown 렌더링 페이지 표시
+  POST /upload         → 파일 업로드 후 raw/ 저장 (V-03)
+  POST /chat           → claude -p subprocess 채팅 응답 (V-04)
 """
 
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -19,9 +22,9 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import markdown2
-from flask import Flask, redirect, render_template, url_for
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
-from mcp_server.wiki_store import _parse_frontmatter, wiki_list, wiki_read
+from mcp_server.wiki_store import _parse_frontmatter, raw_save, wiki_list, wiki_read
 
 app = Flask(__name__)
 
@@ -160,6 +163,55 @@ def page(slug: str):
         title=meta.get("title", slug),
         not_found=False,
     )
+
+
+@app.route("/upload", methods=["POST"])
+def upload():
+    """파일 업로드 라우트 (V-03).
+
+    multipart/form-data 로 파일을 수신하여 raw/ 디렉토리에 저장.
+    """
+    if "file" not in request.files:
+        return jsonify({"ok": False, "error": "파일이 없습니다."}), 400
+
+    f = request.files["file"]
+    if not f or f.filename == "":
+        return jsonify({"ok": False, "error": "파일명이 비어 있습니다."}), 400
+
+    filename = f.filename
+    raw_save(filename, f.read())
+    return jsonify({"ok": True, "filename": filename})
+
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    """채팅 라우트 (V-04).
+
+    요청 JSON {"message": "..."} 을 claude -p subprocess 로 전달하고
+    {"reply": "..."} 를 반환.
+    """
+    data = request.get_json(silent=True) or {}
+    message = data.get("message", "").strip()
+    if not message:
+        return jsonify({"ok": False, "error": "메시지가 비어 있습니다."}), 400
+
+    try:
+        result = subprocess.run(
+            ["claude", "-p", message],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            cwd=str(_PROJECT_ROOT),
+            timeout=120,
+        )
+        reply = result.stdout.strip() or result.stderr.strip() or "(응답 없음)"
+        return jsonify({"reply": reply})
+    except subprocess.TimeoutExpired:
+        return jsonify({"reply": "오류: 응답 시간이 초과되었습니다 (120초).", "error": True})
+    except FileNotFoundError:
+        return jsonify({"reply": "오류: claude CLI를 찾을 수 없습니다. claude 명령어가 PATH에 있는지 확인하세요.", "error": True})
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"reply": f"오류: {exc}", "error": True})
 
 
 if __name__ == "__main__":

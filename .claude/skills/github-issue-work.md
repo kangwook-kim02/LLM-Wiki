@@ -13,7 +13,9 @@ description: "이슈 #N번 작업하자", "이슈 #N 시작해", "#N번 작업�
 
 ## 절차
 
-### Step 1 — 이슈 내용 파악
+### Step 1 — 컨텍스트 파악
+
+`docs/decision-log.md`를 읽어 이 이슈와 관련된 과거 의사결정 라운드를 확인한다.
 
 ```bash
 gh issue view $N

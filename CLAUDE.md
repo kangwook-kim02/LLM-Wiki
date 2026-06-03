@@ -23,6 +23,7 @@
 │   ├── domain-definition.md
 │   ├── PRD.md
 │   ├── decision-log.md
+│   ├── issues-plan.md     ← GitHub 이슈 계획 (M2~M5)
 │   ├── wiki-schema.md     ← Wiki 페이지 유형별 템플릿
 │   └── health/            ← /health 커맨드 실행 로그 (날짜별)
 │
@@ -89,6 +90,7 @@
 |------|------|--------|
 | **github-issue-create** | `.claude/skills/github-issue-create.md` | 이슈 등록 요청 |
 | **github-issue-work** | `.claude/skills/github-issue-work.md` | 특정 이슈 번호 작업 시작 |
+| **pr-review** | `.claude/skills/pr-review.md` | 특정 PR 번호 리뷰 요청 |
 | **orchestrate** | `.claude/skills/orchestrate.md` | impl-agent → verify-agent 조율 *(github-issue-work 내부 호출, 직접 트리거 금지)* |
 
 ---
@@ -111,3 +113,4 @@
 6. 모든 내부 링크는 `[[slug]]` 형식으로 작성한다.
 7. YAML frontmatter 필수, 출처 없는 주장 작성 금지.
 8. 날짜는 `YYYY-MM-DD`, 한국어 우선·기술 용어 영어 병기 허용.
+9. 새 세션 시작 시 `docs/decision-log.md`를 읽어 이전 의사결정 컨텍스트를 파악한다.

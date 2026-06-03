@@ -149,6 +149,7 @@ LangGraph 페이지에 StateGraph 설명 추가해줘
 |------|--------|------|
 | **github-issue-create** | "이슈 등록해줘" | gh issue create (이슈 템플릿 기반) |
 | **github-issue-work** | "이슈 #N번 작업하자" | 파악 → 브랜치 생성 → orchestrate 위임 |
+| **pr-review** | "PR #N번 리뷰해줘" | 완료 기준·규칙 준수·코드 품질 4관점 리뷰 |
 | **orchestrate** | github-issue-work 내부 호출 | impl-agent → verify-agent 순차 실행 |
 
 ### 커맨드
@@ -171,6 +172,7 @@ LLM-Wiki/
 │   ├── domain-definition.md     ← 지식 도메인 정의
 │   ├── PRD.md                   ← 제품 요구사항 문서
 │   ├── decision-log.md          ← 의사결정 이력
+│   ├── issues-plan.md           ← GitHub 이슈 계획 (M2~M5)
 │   ├── wiki-schema.md           ← Wiki 페이지 유형별 템플릿
 │   └── health/                  ← /health 점검 로그 (날짜별)
 │
@@ -192,7 +194,7 @@ LLM-Wiki/
 ├── raw/                         ← 원본 소스 파일 (Streamlit 업로드로만 추가)
 │
 ├── .claude/
-│   ├── skills/                  ← 스킬 정의 (6개)
+│   ├── skills/                  ← 스킬 정의 (7개)
 │   ├── agents/                  ← 에이전트 명세 (impl, verify)
 │   └── commands/                ← 슬래시 커맨드 (/health)
 │

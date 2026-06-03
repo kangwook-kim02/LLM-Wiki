@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}LLM Wiki{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="app-layout">
+    <!-- 사이드바 (V-01) -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="{{ url_for('index') }}" class="sidebar-logo">LLM Wiki</a>
+      </div>
+      <nav class="sidebar-nav">
+        {% if sidebar %}
+          {% for group in sidebar %}
+            <div class="nav-group">
+              <div class="nav-group-label">{{ group.label }}</div>
+              <ul class="nav-group-list">
+                {% for p in group.pages %}
+                  <li class="nav-item {% if current_slug == p.slug %}active{% endif %}">
+                    <a href="{{ url_for('page', slug=p.slug) }}" class="nav-link">
+                      {{ p.title }}
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="sidebar-empty">페이지가 없습니다.</p>
+        {% endif %}
+      </nav>
+    </aside>
+
+    <!-- 본문 패널 (V-02) -->
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

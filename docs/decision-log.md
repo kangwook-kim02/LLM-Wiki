@@ -800,6 +800,45 @@ orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 �
 
 ---
 
-## 향후 라운드 예정
+## Round 21 — Flask 뷰어 기본 레이아웃 구현
 
-- **Round 21**: Flask 뷰어 UI 상세 구성 (3패널 레이아웃, .mcp.json 생성) — 이슈 #6 작업 시
+**날짜**: 2026-06-04
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+이슈 #6 작업: Wiki 열람이 가능한 기본 Flask 앱 구현 (Round 20 결정 실행)
+
+### 결정 사항
+
+**Q1. 사이드바 페이지 목록 — MCP 경유 vs 직접 import?**
+
+- **결론**: `wiki_store.wiki_list()` / `wiki_store.wiki_read()` 직접 import 사용 (MCP 경유 없음)
+- **근거**: Round 20 결정 유지. 뷰어 내부 열람은 응답 속도 최적화를 위해 MCP 우회.
+
+**Q2. `_parse_frontmatter` 내부 함수 노출?**
+
+- `viewer/app.py`가 `wiki_store._parse_frontmatter`(내부 헬퍼)를 직접 import
+- **결론**: MVP 범위에서 허용. 뷰어가 frontmatter 파싱 로직을 재사용하는 가장 단순한 방법.
+
+**Q3. `.mcp.json` 위치 및 내용?**
+
+- **결론**: 프로젝트 루트에 신규 생성. `.claude/settings.json`과 동일한 MCP 서버 설정 복사.
+- **근거**: `claude -p` subprocess 실행 시 cwd=프로젝트루트 + `.mcp.json` 자동 로드 (Round 20 핵심 인사이트)
+
+### 구현 결과
+
+- `viewer/app.py` — Flask 라우팅, wiki_store 직접 import, 카테고리 그룹핑, Markdown 렌더링
+- `viewer/templates/layout.html` — 사이드바 + 본문 2패널 Jinja2 템플릿
+- `viewer/templates/page.html` — frontmatter 메타 + wiki-body 렌더링
+- `viewer/static/style.css` — GitHub 스타일 2패널 CSS, Markdown 스타일, 반응형
+- `.mcp.json` — 프로젝트 루트 신규 생성
+- `requirements.txt` — flask>=3.0.0, markdown2>=2.4.0 추가
+
+**영향 받은 파일:**
+- `viewer/app.py` — 신규
+- `viewer/templates/layout.html` — 신규
+- `viewer/templates/page.html` — 신규
+- `viewer/static/style.css` — 신규
+- `.mcp.json` — 신규
+- `requirements.txt` — 의존성 추가

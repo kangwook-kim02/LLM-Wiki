@@ -662,8 +662,54 @@ orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 �
 
 ---
 
+## Round 19 — server.py FastMCP 구현 세부 결정
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+이슈 #2 작업 중 `mcp_server/server.py` 구현 과정에서 세부 설계를 결정함.
+
+### 결정 사항
+
+**Q1. FastMCP 패키지 선택: `fastmcp` vs 공식 `mcp` SDK?**
+
+- **결론**: 공식 MCP Python SDK(`mcp[cli]`) 채택. `from mcp.server.fastmcp import FastMCP` 사용.
+- **근거**: Anthropic 공식 패키지로 장기 지원 가능성이 높음. `fastmcp` 단독 패키지보다 호환성 우수.
+
+**Q2. `raw_save` MCP 레이어 타입 처리?**
+
+- MCP 프로토콜은 JSON 기반이므로 bytes를 직접 전달 불가.
+- **결론**: MCP 레이어에서 `str` 수신 후 `UTF-8 bytes`로 인코딩하여 `wiki_store.raw_save`에 전달. MVP 범위에서 충분.
+
+**Q3. `settings.json` PYTHONPATH 설정 방식?**
+
+- `server.py`가 `from wiki_store import ...` 형태로 같은 디렉토리 내 모듈을 임포트하는 구조.
+- **결론**: `settings.json`의 `env`에 `PYTHONPATH: mcp_server/` 설정. Python 실행 경로는 절대경로 사용.
+- **한계**: Python 절대경로가 로컬 환경에 종속됨. 다른 환경에서는 수정 필요 (이슈 범위 허용).
+
+**Q4. `requirements.txt` 신규 생성?**
+
+- 기존에 `requirements.txt` 없음.
+- **결론**: `mcp[cli]>=1.0.0` 명시한 `requirements.txt` 신규 생성. 이후 이슈에서 의존성 추가 예정.
+
+### 구현 결과
+
+- `requirements.txt` 신규 생성
+- `mcp_server/server.py` 신규 작성 (7개 도구 전부 Must + Should 충족)
+- `.claude/settings.json` 신규 생성 (MCP 서버 등록)
+- impl → verify 1회 PASS
+
+**영향 받은 파일:**
+- `requirements.txt` — 신규
+- `mcp_server/server.py` — 신규
+- `.claude/settings.json` — 신규
+
+---
+
 ## 향후 라운드 예정
 
-- **Round 19**: server.py FastMCP 구현 세부 결정 — 이슈 #2 작업 시
-- **Round 20**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식) — 이슈 #6 작업 시
-- **Round 21**: 최초 인제스트 소스 선정 및 실행 — 이슈 #4 작업 시
+- **Round 20**: MCP 통합 테스트 세부 결정 — 이슈 #3 작업 시
+- **Round 21**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식) — 이슈 #6 작업 시
+- **Round 22**: 최초 인제스트 소스 선정 및 실행 — 이슈 #4 작업 시

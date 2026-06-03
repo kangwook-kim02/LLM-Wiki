@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+
+# raw 소스 파일 (용량 크고 민감할 수 있음)
+raw/
+
+# Streamlit
+.streamlit/
+
+# OS
+.DS_Store
+Thumbs.db

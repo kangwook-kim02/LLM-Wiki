@@ -1,0 +1,363 @@
+/* viewer/static/style.css — LLM Wiki 2패널 레이아웃 스타일 */
+
+/* ===== 기본 리셋 ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #24292f;
+  background: #f6f8fa;
+}
+
+/* ===== 2패널 레이아웃 ===== */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== 사이드바 (V-01) ===== */
+.sidebar {
+  width: 260px;
+  min-width: 220px;
+  max-width: 320px;
+  height: 100vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-right: 1px solid #d0d7de;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #d0d7de;
+  background: #24292f;
+}
+
+.sidebar-logo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.sidebar-logo:hover {
+  color: #79c0ff;
+}
+
+.sidebar-nav {
+  padding: 12px 0;
+  flex: 1;
+}
+
+.sidebar-empty {
+  padding: 16px 20px;
+  color: #6e7781;
+  font-size: 0.875rem;
+}
+
+/* ===== 카테고리 그룹 ===== */
+.nav-group {
+  margin-bottom: 8px;
+}
+
+.nav-group-label {
+  padding: 6px 16px 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6e7781;
+  user-select: none;
+}
+
+.nav-group-list {
+  list-style: none;
+}
+
+/* ===== 네비게이션 아이템 ===== */
+.nav-item {
+  margin: 0;
+}
+
+.nav-link {
+  display: block;
+  padding: 5px 16px 5px 20px;
+  font-size: 0.875rem;
+  color: #24292f;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background 0.1s, border-color 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-link:hover {
+  background: #f6f8fa;
+  color: #0969da;
+}
+
+.nav-item.active .nav-link {
+  border-left-color: #0969da;
+  background: #ddf4ff;
+  color: #0969da;
+  font-weight: 500;
+}
+
+/* ===== 본문 패널 (V-02) ===== */
+.main-content {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+/* ===== 빈 상태 ===== */
+.page-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6e7781;
+  text-align: center;
+  gap: 12px;
+}
+
+.page-empty h1 {
+  font-size: 2rem;
+  color: #24292f;
+}
+
+/* ===== 404 오류 ===== */
+.page-error {
+  padding: 48px;
+  color: #cf222e;
+}
+
+.page-error h1 {
+  margin-bottom: 12px;
+}
+
+/* ===== Wiki 페이지 본문 ===== */
+.wiki-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 48px 80px;
+}
+
+/* 페이지 메타 헤더 */
+.page-meta {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d0d7de;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #24292f;
+}
+
+.meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.meta-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #ddf4ff;
+  color: #0550ae;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.meta-date {
+  font-size: 0.825rem;
+  color: #6e7781;
+  margin-left: 4px;
+}
+
+/* ===== Markdown 렌더링 영역 ===== */
+.wiki-body {
+  color: #24292f;
+}
+
+.wiki-body h1,
+.wiki-body h2,
+.wiki-body h3,
+.wiki-body h4,
+.wiki-body h5,
+.wiki-body h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.wiki-body h1 { font-size: 1.6rem; border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+.wiki-body h2 { font-size: 1.35rem; border-bottom: 1px solid #d0d7de; padding-bottom: 0.2em; }
+.wiki-body h3 { font-size: 1.15rem; }
+.wiki-body h4 { font-size: 1rem; }
+
+.wiki-body p {
+  margin-bottom: 1em;
+}
+
+.wiki-body a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.wiki-body a:hover {
+  text-decoration: underline;
+}
+
+.wiki-body ul,
+.wiki-body ol {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.wiki-body li {
+  margin-bottom: 0.25em;
+}
+
+.wiki-body blockquote {
+  border-left: 4px solid #d0d7de;
+  padding: 4px 16px;
+  color: #6e7781;
+  margin: 0 0 1em;
+  background: #f6f8fa;
+  border-radius: 0 4px 4px 0;
+}
+
+/* 인라인 코드 */
+.wiki-body code {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-size: 0.875em;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: #cf222e;
+}
+
+/* 코드 블록 */
+.wiki-body pre {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+
+.wiki-body pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.875rem;
+  color: #24292f;
+  white-space: pre;
+}
+
+/* 테이블 */
+.wiki-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1em;
+  font-size: 0.9rem;
+}
+
+.wiki-body th,
+.wiki-body td {
+  border: 1px solid #d0d7de;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.wiki-body th {
+  background: #f6f8fa;
+  font-weight: 600;
+}
+
+.wiki-body tr:nth-child(even) {
+  background: #f6f8fa;
+}
+
+/* 수평선 */
+.wiki-body hr {
+  border: none;
+  border-top: 1px solid #d0d7de;
+  margin: 1.5em 0;
+}
+
+/* 체크박스 (task list) */
+.wiki-body input[type="checkbox"] {
+  margin-right: 6px;
+}
+
+/* ===== 스크롤바 스타일 ===== */
+.sidebar::-webkit-scrollbar,
+.main-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.main-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.main-content::-webkit-scrollbar-thumb {
+  background: #d0d7de;
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: #8c959f;
+}
+
+/* ===== 반응형 (좁은 화면) ===== */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+    height: auto;
+    overflow: auto;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #d0d7de;
+  }
+
+  .main-content {
+    height: auto;
+    overflow: visible;
+  }
+
+  .wiki-page {
+    padding: 24px 20px 48px;
+  }
+}

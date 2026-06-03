@@ -96,10 +96,25 @@ def _build_sidebar() -> list[dict]:
     return result
 
 
+def _convert_wiki_links(text: str) -> str:
+    """[[slug]](display) → [display](/page/slug) / [[slug]] → [slug](/page/slug)"""
+    text = re.sub(
+        r'\[\[([^\]]+)\]\]\(([^)]+)\)',
+        lambda m: f'[{m.group(2)}](/page/{m.group(1)})',
+        text,
+    )
+    text = re.sub(
+        r'\[\[([^\]]+)\]\]',
+        lambda m: f'[{m.group(1)}](/page/{m.group(1)})',
+        text,
+    )
+    return text
+
+
 def _render_markdown(body: str) -> str:
     """Markdown 본문을 HTML로 변환."""
     return markdown2.markdown(
-        body,
+        _convert_wiki_links(body),
         extras=["fenced-code-blocks", "tables", "header-ids", "strike", "task_list"],
     )
 

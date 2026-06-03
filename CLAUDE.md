@@ -45,7 +45,7 @@
 ├── raw/                   ← 원본 소스 파일 (불변, Streamlit 업로드로만 추가)
 │
 ├── .claude/
-│   ├── skills/            ← 스킬 정의
+│   ├── skills/            ← 스킬 정의 (각 스킬: skillname/SKILL.md)
 │   ├── agents/            ← 에이전트 명세
 │   └── commands/          ← 슬래시 커맨드
 │
@@ -80,18 +80,18 @@
 
 | 스킬 | 파일 | 트리거 |
 |------|------|--------|
-| **ingest** | `.claude/skills/ingest.md` | 소스 파일 추가/인제스트 요청 |
-| **query** | `.claude/skills/query.md` | 개념·기술 질문 |
-| **wiki-edit** | `.claude/skills/wiki-edit.md` | 특정 페이지 편집 요청 |
+| **ingest** | `.claude/skills/ingest/SKILL.md` | 소스 파일 추가/인제스트 요청 |
+| **query** | `.claude/skills/query/SKILL.md` | 개념·기술 질문 |
+| **wiki-edit** | `.claude/skills/wiki-edit/SKILL.md` | 특정 페이지 편집 요청 |
 
 ### 개발 전용 스킬
 
 | 스킬 | 파일 | 트리거 |
 |------|------|--------|
-| **github-issue-create** | `.claude/skills/github-issue-create.md` | 이슈 등록 요청 |
-| **github-issue-work** | `.claude/skills/github-issue-work.md` | 특정 이슈 번호 작업 시작 |
-| **pr-review** | `.claude/skills/pr-review.md` | 특정 PR 번호 리뷰 요청 |
-| **orchestrate** | `.claude/skills/orchestrate.md` | impl-agent → verify-agent 조율 *(github-issue-work 내부 호출, 직접 트리거 금지)* |
+| **github-issue-create** | `.claude/skills/github-issue-create/SKILL.md` | 이슈 등록 요청 |
+| **github-issue-work** | `.claude/skills/github-issue-work/SKILL.md` | 특정 이슈 번호 작업 시작 |
+| **pr-review** | `.claude/skills/pr-review/SKILL.md` | 특정 PR 번호 리뷰 요청 |
+| **orchestrate** | `.claude/skills/orchestrate/SKILL.md` | impl-agent → verify-agent 조율 *(github-issue-work 내부 호출, 직접 트리거 금지)* |
 
 ---
 

@@ -521,8 +521,52 @@ PRD의 마일스톤(M2~M5)을 GitHub 이슈 단위로 분해하는 작업.
 
 ---
 
+## Round 15 — 스킬 파일 구조 변환 (flat → subdirectory/SKILL.md)
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 문제 발견
+
+`Skill` 도구가 `.claude/skills/github-issue-work.md`를 인식하지 못하는 문제 발생.
+
+### 원인 분석
+
+Claude Code의 `Skill` 도구는 `skillname/SKILL.md` 구조(서브디렉토리 + SKILL.md)만 인식한다.
+기존 프로젝트 스킬 파일은 `skillname.md` 평탄 구조였으므로 시스템 프롬프트에 주입되지 않았다.
+
+**글로벌 스킬 구조 (작동):**
+```
+~/.claude/skills/harness/SKILL.md
+~/.claude/skills/health/SKILL.md
+```
+
+**프로젝트 스킬 구조 (미작동):**
+```
+.claude/skills/github-issue-work.md  ← 인식 불가
+```
+
+### 결정
+
+7개 스킬 파일 전부 `skillname/SKILL.md` 구조로 변환. 기존 평탄 파일 삭제.
+
+**변환 대상:**
+- `ingest.md` → `ingest/SKILL.md`
+- `query.md` → `query/SKILL.md`
+- `wiki-edit.md` → `wiki-edit/SKILL.md`
+- `github-issue-create.md` → `github-issue-create/SKILL.md`
+- `orchestrate.md` → `orchestrate/SKILL.md`
+- `github-issue-work.md` → `github-issue-work/SKILL.md`
+- `pr-review.md` → `pr-review/SKILL.md`
+
+**영향 받은 파일:**
+- `.claude/skills/*/SKILL.md` — 신규 생성 (내용 동일)
+- `.claude/skills/*.md` — 삭제
+
+---
+
 ## 향후 라운드 예정
 
-- **Round 15**: MCP 서버 구현 세부 결정 (wiki_store 및 raw_store 설계) — 이슈 #1 작업 시
-- **Round 16**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식) — 이슈 #6 작업 시
-- **Round 17**: 최초 인제스트 소스 선정 및 실행 — 이슈 #4 작업 시
+- **Round 16**: MCP 서버 구현 세부 결정 (wiki_store 및 raw_store 설계) — 이슈 #1 작업 시
+- **Round 17**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식) — 이슈 #6 작업 시
+- **Round 18**: 최초 인제스트 소스 선정 및 실행 — 이슈 #4 작업 시

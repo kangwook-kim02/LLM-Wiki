@@ -26,7 +26,8 @@
 │   ├── patterns/          ← 아키텍처 패턴
 │   └── sources/           ← 원본 소스 요약
 ├── raw/                   ← 원본 소스 파일 (불변)
-└── .claude/skills/        ← 스킬 정의
+├── .claude/skills/        ← 스킬 정의
+└── .claude/agents/        ← 에이전트 명세
 ```
 
 ---

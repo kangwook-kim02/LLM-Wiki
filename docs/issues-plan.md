@@ -118,50 +118,61 @@
 
 ## M4 — Streamlit 뷰어 구현
 
-### Issue 6: [M4] Streamlit 기본 레이아웃 — 사이드바 + 본문 패널 (V-01, V-02)
+### Issue 6: [M4] Flask 기본 레이아웃 — 사이드바 + 본문 패널 (V-01, V-02)
 
-**목표**: Wiki 열람이 가능한 기본 Streamlit 앱 구현
+**목표**: Wiki 열람이 가능한 기본 Flask 앱 구현
 
 **작업 범위**
-- `viewer/app.py` 신규 작성
+- `viewer/` 디렉토리 구조 신규 생성:
+  - `viewer/app.py` — Flask 라우팅
+  - `viewer/templates/` — Jinja2 HTML 템플릿
+  - `viewer/static/` — CSS 스타일
 - 사이드바 (V-01):
-  - `wiki_list()` MCP 호출로 페이지 목록 로드
+  - `wiki_store.wiki_list()` 직접 import로 페이지 목록 로드 (MCP 경유 없음)
   - 카테고리별 그룹핑 (slug prefix 기준: `concepts/`, `frameworks/` 등)
   - 페이지 클릭 시 선택
 - 중앙 본문 패널 (V-02):
-  - 선택한 페이지 `wiki_read(slug)` MCP 호출
-  - `st.markdown()` 으로 렌더링 (헤더, 코드블록, 리스트)
-- `requirements.txt` 또는 `pyproject.toml`에 의존성 추가
+  - `wiki_store.wiki_read(slug)` 직접 호출
+  - `markdown2` 라이브러리로 서버 사이드 렌더링 (헤더, 코드블록, 리스트)
+- `requirements.txt`에 `flask`, `markdown2` 의존성 추가
 
 **완료 기준**
-- `streamlit run viewer/app.py` 실행 후 localhost:8501 접근 가능
+- `flask --app viewer/app.py run` 실행 후 localhost:5000 접근 가능
 - 페이지 목록 표시 및 클릭 시 내용 렌더링 확인
 
 ---
 
-### Issue 7: [M4] 파일 업로드 + Claude API 채팅 패널 연동 (V-03, V-04)
+### Issue 7: [M4] 파일 업로드 + claude -p subprocess 채팅 패널 연동 (V-03, V-04)
 
-**목표**: Streamlit에서 파일 업로드 후 채팅으로 인제스트 트리거 가능한 UI 완성
+**목표**: Flask에서 파일 업로드 후 채팅으로 인제스트 트리거 가능한 UI 완성
 
 **작업 범위**
 - 파일 업로드 패널 (V-03):
-  - 사이드바에 `st.file_uploader` 추가 (PDF, MD, TXT)
-  - 업로드 시 `raw_save(filename, content)` MCP 호출
+  - 사이드바 HTML form에 파일 업로드 입력 추가 (PDF, MD, TXT)
+  - Flask `/upload` 라우트에서 `wiki_store.raw_save(filename, content)` 직접 호출
   - 업로드 완료 알림 표시
 - 채팅 패널 (V-04):
-  - 우측 패널에 `st.chat_input`, `st.chat_message` 배치
-  - anthropic SDK로 Claude API 연결
-  - 메시지 전송 시 인제스트/쿼리/위키편집 스킬 트리거
-  - 스트리밍 응답 여부: MVP는 비스트리밍 (Open Question 참고)
-- `ANTHROPIC_API_KEY` 환경변수 처리
+  - 우측 패널에 HTML 채팅 입력창 + 메시지 목록 배치
+  - Flask `/chat` 라우트에서 subprocess 방식으로 Claude Code 호출:
+    ```python
+    result = subprocess.run(
+        ["claude", "-p", query],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd="<project_root>"  # .mcp.json 위치
+    )
+    ```
+  - `.mcp.json` 자동 로드 → MCP 도구로 wiki/ 접근 후 응답 반환
+  - MVP 비스트리밍 (AJAX fetch → JSON 응답)
+  - 로딩 표시: 요청 중 스피너 표시
 
 **완료 기준**
 - 파일 업로드 후 `raw/` 디렉토리에 저장 확인
-- 채팅 패널에서 "인제스트해줘" 입력 시 응답 반환
+- 채팅 패널에서 "인제스트해줘" 입력 시 claude -p subprocess 응답 반환
+- MCP 도구(`wiki_list`, `wiki_search` 등)가 subprocess 내에서 호출되는지 확인
 
 **참고**
 - Round 4 결정: B안 (파일 업로드 + 채팅 패널 통합)
-- Round 2 결정: Streamlit 채팅에서 Claude API 직접 호출
+- Round 20 결정: Claude API 직접 호출 → subprocess claude -p + .mcp.json 방식으로 변경
 
 ---
 
@@ -204,14 +215,14 @@
 
 ## 우선순위 요약
 
-| 이슈 | 마일스톤 | 우선순위 | 의존성 |
-|------|---------|---------|--------|
-| Issue 1 | M2 | 1 | 없음 |
-| Issue 2 | M2 | 2 | Issue 1 |
-| Issue 3 | M2 | 3 | Issue 2 |
-| Issue 4 | M3 | 4 | Issue 3 |
-| Issue 5 | M3 | 5 | Issue 4 |
-| Issue 6 | M4 | 6 | Issue 3 |
-| Issue 7 | M4 | 7 | Issue 6 |
-| Issue 8 | M4 | 8 | Issue 6 |
-| Issue 9 | M5 | 9 | Issue 4~8 |
+| 이슈 | 마일스톤 | 우선순위 | 의존성 | 비고 |
+|------|---------|---------|--------|------|
+| Issue 1 | M2 | 1 | 없음 | |
+| Issue 2 | M2 | 2 | Issue 1 | |
+| Issue 3 | M2 | 3 | Issue 2 | |
+| Issue 4 | M3 | 4 | Issue 3 | |
+| Issue 5 | M3 | 5 | Issue 4 | |
+| Issue 6 | M4 | 6 | Issue 3 | Flask 기본 레이아웃 (wiki_store.py 직접 import) |
+| Issue 7 | M4 | 7 | Issue 6 | 파일 업로드 + subprocess 채팅 (claude -p) |
+| Issue 8 | M4 | 8 | Issue 6 | |
+| Issue 9 | M5 | 9 | Issue 4~8 | |

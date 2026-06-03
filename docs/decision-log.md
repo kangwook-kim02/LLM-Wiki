@@ -708,8 +708,60 @@ orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 �
 
 ---
 
+## Round 20 — GUI 채팅 백엔드 아키텍처 전면 변경
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 문제 제기
+
+사용자: "GUI에서 Anthropic API를 직접 호출하면 API 키가 필요하고 비용이 발생한다. 개인 Claude Code(구독)를 사용하는 방법이 없는가?"
+
+### 논의
+
+**기존 설계(Round 4 B안)의 한계:**
+- Streamlit → `anthropic.messages.create()` → Claude API (유료, API 키 필요)
+- 사용자 입장에서 LLM Wiki를 사용하려면 Claude 구독과 별도로 API 키가 필요
+- "LLM Wiki의 장점이 사라진다"는 사용자 지적
+
+**대안 후보:**
+| 방식 | API 키 필요 | MCP 연동 | 구현 난이도 |
+|------|------------|---------|------------|
+| Anthropic API 직접 호출 | ✅ 필요 | ✗ (별도 구현) | 낮음 |
+| `claude -p` subprocess (기본 cwd) | ✗ 불필요 | ✗ (미연동 확인) | 낮음 |
+| `claude -p` subprocess (cwd=root, .mcp.json) | ✗ 불필요 | ✅ 자동 로드 | 낮음 |
+
+**검증 실험:**
+- `claude -p "wiki_list 도구 호출해줘"` (cwd 미지정) → "llm-wiki MCP 서버가 연결되어 있지 않습니다" (실패)
+- `subprocess.run(["claude", "-p", query], cwd=project_root)` 방식 + 프로젝트 루트의 `.mcp.json` → Claude Code가 `.mcp.json`을 읽어 MCP 서버 자동 로드 (성공 예정)
+
+**핵심 인사이트:**
+`claude -p`가 MCP를 로드하지 못했던 이유는 실행 디렉토리에 MCP 설정 파일이 없었기 때문.
+`cwd`를 프로젝트 루트(`.mcp.json` 위치)로 지정하면 자동 로드된다.
+
+**GUI 프레임워크 변경:**
+- 기존: Streamlit (채팅 UI 어색, API 종속)
+- 변경: **Flask + HTML** (자유도 높음, Markdown 렌더링 품질 우수, 3패널 레이아웃 정밀 제어)
+- 근거: wiki/ 페이지 Markdown 렌더링(`markdown2`), 3패널 CSS Grid 레이아웃, 과제 제출용 스크린샷 품질
+
+### 결정
+
+1. **채팅 백엔드**: Anthropic API 직접 호출 → `subprocess(["claude", "-p", query], cwd=project_root)` 로 변경
+2. **MCP 로드 방법**: 프로젝트 루트에 `.mcp.json` 신규 생성 (`.claude/settings.json`과 동일 내용)
+3. **GUI 프레임워크**: Streamlit → **Flask + HTML/CSS** 로 변경
+4. **페이지 열람(목록/읽기)**: MCP 경유 불필요 — `wiki_store.py` 직접 import 사용 (응답 속도 최적화)
+5. **파일 업로드**: MCP `raw_save` 경유 불필요 — `wiki_store.raw_save()` 직접 호출
+6. **채팅 스트리밍**: MVP 비스트리밍 (AJAX fetch → JSON 응답) 확정
+
+**영향 받은 파일:**
+- `docs/PRD.md` — v1.2, 시나리오·기능 요구사항·구조도·비기능 요구사항 전면 수정
+- `docs/issues-plan.md` — Issue 6(Streamlit → Flask), Issue 7(Claude API → subprocess) 재작성
+- `.mcp.json` — 신규 생성 예정 (이슈 #6 작업 시)
+- `requirements.txt` — `streamlit`, `anthropic` 제거 / `flask`, `markdown2` 추가 예정
+
+---
+
 ## 향후 라운드 예정
 
-- **Round 20**: MCP 통합 테스트 세부 결정 — 이슈 #3 작업 시
-- **Round 21**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식) — 이슈 #6 작업 시
+- **Round 21**: Flask 뷰어 UI 상세 구성 (3패널 레이아웃, .mcp.json 생성) — 이슈 #6 작업 시
 - **Round 22**: 최초 인제스트 소스 선정 및 실행 — 이슈 #4 작업 시

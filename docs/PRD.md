@@ -2,7 +2,7 @@
 
 **작성일**: 2026-06-03
 **작성자**: Wiki Agent (Claude Sonnet 4.6)
-**상태**: v1.1 — 소스 업로드 흐름 개선 (2026-06-03)
+**상태**: v1.2 — GUI 채팅 백엔드 변경 (subprocess + Flask, 2026-06-03)
 
 ---
 
@@ -30,7 +30,7 @@ MCP 서버를 중간 계층으로 두고, LLM 에이전트가 구조화된 Wiki�
 - [ ] **Streamlit UI에서 파일 업로드** → MCP `raw_save`로 저장 → 에이전트 자동 인제스트
 - [ ] 에이전트가 소스 문서를 읽고 Wiki를 자동 생성하는 Ingest 워크플로우 구현
 - [ ] 에이전트가 Wiki를 참조하여 자연어 질문에 답변하는 Query 워크플로우 구현
-- [ ] Streamlit 기반 Wiki 뷰어 (파일 업로드 + 채팅 패널 + 페이지 열람) 구현
+- [ ] Flask 기반 Wiki 뷰어 (파일 업로드 + 채팅 패널 + 페이지 열람) 구현
 
 ### Secondary Goals
 
@@ -57,7 +57,8 @@ Streamlit: 업로드 완료 알림 표시
 
 [2단계 — 채팅 패널에서 인제스트 트리거]
 사용자: 우측 채팅 패널에 "langchain-docs.pdf 인제스트해줘" 입력
-Streamlit: Claude API 호출 (ingest 스킬 트리거)
+Flask: subprocess.run(["claude", "-p", <질문>], cwd=project_root) 호출
+      → .mcp.json 자동 로드 → MCP 도구로 ingest 스킬 트리거
 
 [3단계 — 에이전트 인제스트]
 에이전트:
@@ -91,7 +92,7 @@ Streamlit: 채팅 패널에 생성된 페이지 목록 표시
 ### 시나리오 3: Wiki 뷰어 (3패널 UI)
 
 ```
-사용자: streamlit run viewer/app.py 실행 → http://localhost:8501 접속
+사용자: flask --app viewer/app.py run 실행 → http://localhost:5000 접속
 
 뷰어 레이아웃:
   [좌] 사이드바
@@ -104,7 +105,8 @@ Streamlit: 채팅 패널에 생성된 페이지 목록 표시
        - 내부 링크 클릭 시 해당 페이지로 이동
 
   [우] 채팅 패널
-       - Claude API 기반 채팅 인터페이스
+       - subprocess claude -p 기반 채팅 인터페이스 (API 호출 없음)
+       - cwd=project_root → .mcp.json 자동 로드 → MCP 도구 사용
        - 인제스트 트리거: "파일명 인제스트해줘"
        - 질의응답: "RAG란 무엇인가요?"
        - Wiki 편집 요청: "LangGraph 페이지 수정해줘"
@@ -140,8 +142,8 @@ Streamlit: 채팅 패널에 생성된 페이지 목록 표시
 |----|------|---------|
 | V-01 | 사이드바 페이지 목록 표시 (카테고리별) | Must |
 | V-02 | 중앙 패널 Markdown 렌더링 (헤더, 코드블록, 리스트) | Must |
-| V-03 | 사이드바 소스 파일 업로드 (`st.file_uploader`) → MCP `raw_save` 호출 | Must |
-| V-04 | 우측 채팅 패널 — Claude API 기반 대화 인터페이스 | Must |
+| V-03 | 사이드바 소스 파일 업로드 → `wiki_store.raw_save` 직접 호출 (MCP 경유 없음) | Must |
+| V-04 | 우측 채팅 패널 — `subprocess(claude -p, cwd=root)` 기반 대화 인터페이스 | Must |
 | V-05 | 사이드바 키워드 검색 → MCP `wiki_search` 호출 | Should |
 | V-06 | 페이지 간 내부 링크 클릭 이동 | Could |
 
@@ -153,7 +155,7 @@ Streamlit: 채팅 패널에 생성된 페이지 목록 표시
 |------|---------|
 | **응답 시간** | wiki_read/write 100ms 이내 |
 | **저장 형식** | UTF-8 Markdown (.md) |
-| **호환성** | Python 3.11+, FastMCP 최신, Streamlit 최신, anthropic SDK 최신 |
+| **호환성** | Python 3.11+, FastMCP 최신, Flask 최신, markdown2 최신 |
 | **확장성** | 슬러그 기반 구조로 카테고리 추가 용이 |
 
 ---
@@ -161,31 +163,23 @@ Streamlit: 채팅 패널에 생성된 페이지 목록 표시
 ## 6. 시스템 구조
 
 ```
-┌────────────────────────────────────────────────────────┐
-│         Streamlit 뷰어 (viewer/app.py :8501)           │
-│  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │   사이드바   │  │  본문 패널   │  │   채팅 패널   │  │
-│  │ 페이지 목록  │  │ MD 렌더링    │  │ Claude API    │  │
-│  │ 검색창      │  │             │  │ 인제스트 트리거│  │
-│  │ 파일 업로드  │  │             │  │ 질의응답      │  │
-│  └──────┬──────┘  └──────────────┘  └──────┬────────┘  │
-└─────────┼────────────────────────────────────┼──────────┘
-          │ raw_save(file)                      │ Claude API 호출
-          ▼                                     ▼
-┌──────────────────────────┐      ┌─────────────────────────┐
-│   MCP 서버 (FastMCP)      │      │    Claude Code 에이전트  │
-│  wiki_list  wiki_read    │◄─────│  ingest / query         │
-│  wiki_write wiki_search  │      │  wiki-edit              │
-│  wiki_delete             │      └─────────────────────────┘
-│  raw_save   raw_read     │
-└────────────┬─────────────┘
-             │
-     ┌───────┴────────┐
-     ▼                ▼
-┌─────────┐     ┌──────────┐
-│ wiki/   │     │  raw/    │
-│ *.md    │     │ 업로드파일│
-└─────────┘     └──────────┘
+┌─────────────────────────────────────────────────────────────┐
+│              Flask 뷰어 (viewer/ :5000)                      │
+│  ┌──────────────┐  ┌────────────────┐  ┌─────────────────┐  │
+│  │   사이드바    │  │   본문 패널    │  │    채팅 패널    │  │
+│  │ 페이지 목록   │  │  MD 렌더링     │  │ subprocess      │  │
+│  │ 검색창       │  │  (markdown2)  │  │ ["claude","-p"] │  │
+│  │ 파일 업로드   │  │               │  │ cwd=root        │  │
+│  └──────┬───────┘  └───────┬────────┘  └───────┬─────────┘  │
+└─────────┼──────────────────┼───────────────────┼────────────┘
+          │ raw_save()       │ wiki_store.py      │ .mcp.json 자동 로드
+          │ 직접 호출         │ 직접 import         ▼
+          ▼                  ▼            ┌────────────────────┐
+     ┌─────────┐       ┌──────────┐      │  MCP 서버 (FastMCP) │
+     │  raw/   │       │  wiki/   │◄─────│  wiki_list  read   │
+     │ 업로드   │       │  *.md    │      │  write  search     │
+     └─────────┘       └──────────┘      │  delete  raw_*     │
+                                         └────────────────────┘
 ```
 
 ---
@@ -204,6 +198,7 @@ Streamlit: 채팅 패널에 생성된 페이지 목록 표시
 
 ## 8. 열린 질문 (Open Questions)
 
-- `wiki_search`의 검색 방식: 단순 문자열 매칭(MVP) vs TF-IDF(추후)?
-- MCP 서버를 stdio 방식으로 실행할 것인가, HTTP 방식으로 실행할 것인가?
-- Streamlit 채팅 패널에서 Claude API 호출 시 스트리밍 응답을 지원할 것인가?
+- `wiki_search`의 검색 방식: 단순 문자열 매칭(MVP) vs TF-IDF(추후)? ← MVP는 문자열 매칭으로 확정
+- ~~MCP 서버를 stdio 방식으로 실행할 것인가, HTTP 방식으로 실행할 것인가?~~ → **stdio 확정** (Round 2)
+- ~~Streamlit 채팅 패널에서 Claude API 호출 시 스트리밍 응답을 지원할 것인가?~~ → **Flask + subprocess 방식으로 전환, MVP 비스트리밍** (Round 20)
+- `.mcp.json` vs `.claude/settings.json`: `claude -p` subprocess 실행 시 MCP 자동 로드를 위해 프로젝트 루트에 `.mcp.json` 생성 필요 (이슈 #6 작업 시 확인)

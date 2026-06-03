@@ -117,16 +117,32 @@ def raw_save(filename: str, content: str) -> str:
 def raw_read(filename: str) -> str:
     """raw/ 디렉토리에서 파일을 읽어 문자열로 반환한다.
 
+    .pdf 파일의 경우 pypdf로 텍스트를 추출한다.
+    나머지 파일은 UTF-8로 디코딩한다.
+
     Args:
         filename: 읽을 파일명
 
     Returns:
-        파일 내용 (UTF-8 디코딩)
+        파일 내용 (텍스트)
 
     Raises:
         FileNotFoundError: 파일이 존재하지 않을 때
     """
     data = _raw_read(filename)
+
+    if filename.lower().endswith(".pdf"):
+        import io
+        from pypdf import PdfReader
+
+        reader = PdfReader(io.BytesIO(data))
+        pages_text = []
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                pages_text.append(text)
+        return "\n\n".join(pages_text)
+
     return data.decode("utf-8")
 
 

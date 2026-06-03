@@ -761,7 +761,45 @@ orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 �
 
 ---
 
+## Round 22 — 최초 인제스트 소스 선정 및 PDF 지원 추가
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+이슈 #4 작업 중 `raw/Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.pdf` (Lewis et al., 2021 원저 RAG 논문)를 인제스트 소스로 선정하여 최초 Wiki 빌드를 수행함.
+
+### 문제 발견
+
+`mcp_server/server.py`의 `raw_read` 도구가 `data.decode("utf-8")`로만 구현되어 있어 바이너리 PDF 파일 읽기 불가.
+
+### 결정 사항
+
+**Q1. 인제스트 소스 선정?**
+
+- **결론**: `raw/Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.pdf` 사용 — RAG 개념·프레임워크·패턴이 풍부하여 LLM Wiki 도메인에 최적
+- `raw/` 디렉토리에 이미 존재하는 파일 활용
+
+**Q2. PDF 지원 방식?**
+
+- **결론**: `mcp_server/server.py`의 `raw_read` 도구에 `.pdf` 확장자 감지 분기 추가. `pypdf.PdfReader`로 텍스트 추출 후 문자열 반환. 비-PDF 파일은 기존 UTF-8 decode 경로 유지.
+- `requirements.txt`에 `pypdf>=3.0.0` 추가.
+- `wiki_store.raw_read`는 bytes 반환 유지 — MCP 레이어에서만 PDF 처리 (계층 분리)
+
+### 구현 결과
+
+- Wiki 페이지 21개 생성 (sources/1, concepts/10, frameworks/3, patterns/7)
+- 모든 페이지 YAML frontmatter + `[[slug]]` 내부 링크 포함
+- `wiki/index.md`, `wiki/log.md` 갱신 완료
+
+**영향 받은 파일:**
+- `requirements.txt` — `pypdf>=3.0.0` 추가
+- `mcp_server/server.py` — `raw_read` PDF 분기 추가
+- `wiki/` — 21개 페이지 신규 생성 + index.md, log.md 갱신
+
+---
+
 ## 향후 라운드 예정
 
 - **Round 21**: Flask 뷰어 UI 상세 구성 (3패널 레이아웃, .mcp.json 생성) — 이슈 #6 작업 시
-- **Round 22**: 최초 인제스트 소스 선정 및 실행 — 이슈 #4 작업 시

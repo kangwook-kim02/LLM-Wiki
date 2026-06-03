@@ -16,20 +16,21 @@ Andrej Karpathy의 LLM Wiki 패턴을 확장하여, **MCP(Model Context Protocol
 ## 시스템 아키텍처
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│         Streamlit 뷰어 (viewer/app.py :8501)             │
-│  [좌: 사이드바]      [중: 본문 패널]    [우: 채팅 패널]  │
-│  페이지 목록/검색    MD 렌더링          Claude API 연결   │
-│  파일 업로드                            인제스트/질의응답  │
-└──────┬──────────────────────────────────────┬────────────┘
-       │ raw_save(file)                        │ Claude API 호출
-       ▼                                       ▼
-┌──────────────────────┐          ┌────────────────────────┐
-│    MCP 서버           │◄─────────│   Claude Code 에이전트  │
-│  wiki_list/read      │  MCP 도구 │   ingest / query       │
-│  wiki_write/search   │  호출     │   wiki-edit            │
-│  wiki_delete         │           │   github-issue-work    │
-│  raw_save / raw_read │           └────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│           Flask 뷰어 (viewer/app.py :5000)                   │
+│  [좌: 사이드바]       [중: 본문 패널]    [우: 채팅 패널]    │
+│  페이지 목록/검색     MD 렌더링          claude -p 연결      │
+│  파일 업로드                             인제스트/질의응답   │
+└──────┬────────────────────────────────────────┬──────────────┘
+       │ wiki_store 직접 import                  │ subprocess
+       │ raw_save(file)                          │ claude -p
+       ▼                                         ▼
+┌──────────────────────┐          ┌────────────────────────────┐
+│    MCP 서버           │◄─────────│   Claude Code 에이전트     │
+│  wiki_list/read      │  MCP 도구 │   ingest / query           │
+│  wiki_write/search   │  호출     │   wiki-edit                │
+│  wiki_delete         │           │   github-issue-work        │
+│  raw_save / raw_read │           └────────────────────────────┘
 └──────────┬───────────┘
            │
      ┌─────┴──────┐
@@ -40,6 +41,10 @@ Andrej Karpathy의 LLM Wiki 패턴을 확장하여, **MCP(Model Context Protocol
 └─────────┘  └─────────┘
 ```
 
+> 뷰어의 페이지 열람·파일 업로드는 `wiki_store.py`를 직접 import하여 처리합니다 (MCP 불필요).
+> 채팅 패널은 `subprocess(["claude", "-p", query], cwd=project_root)`로 Claude Code를 호출하며,
+> 프로젝트 루트의 `.mcp.json`을 통해 MCP 도구가 자동 로드됩니다.
+
 ---
 
 ## MCP 도구 목록
@@ -48,12 +53,12 @@ MCP 서버(`mcp_server/server.py`)가 제공하는 7가지 도구:
 
 | 도구 | 호출 주체 | 설명 |
 |------|----------|------|
-| `wiki_list()` | 에이전트 / 뷰어 | 전체 위키 페이지 목록(slug) 반환 |
-| `wiki_read(slug)` | 에이전트 / 뷰어 | 특정 페이지의 Markdown 내용 반환 |
+| `wiki_list()` | 에이전트 | 전체 위키 페이지 목록(slug) 반환 |
+| `wiki_read(slug)` | 에이전트 | 특정 페이지의 Markdown 내용 반환 |
 | `wiki_write(slug, content)` | 에이전트 | 페이지 생성 또는 수정 |
-| `wiki_search(query)` | 에이전트 / 뷰어 | 제목·본문 키워드 검색 |
+| `wiki_search(query)` | 에이전트 | 제목·본문 키워드 검색 |
 | `wiki_delete(slug)` | 에이전트 | 페이지 삭제 |
-| `raw_save(filename, content)` | Streamlit 뷰어 | 업로드 파일을 `raw/`에 저장 |
+| `raw_save(filename, content)` | 에이전트 | 업로드 파일을 `raw/`에 저장 |
 | `raw_read(filename)` | 에이전트 | `raw/` 파일 내용 반환 (인제스트용) |
 
 **slug 형식**: `카테고리/페이지명` — 예) `concepts/rag`, `frameworks/langchain`
@@ -65,26 +70,30 @@ MCP 서버(`mcp_server/server.py`)가 제공하는 7가지 도구:
 ### 요구 환경
 
 - Python 3.11+
-- Claude Code CLI
+- Claude Code CLI (`npm install -g @anthropic-ai/claude-code`)
 - GitHub CLI (`gh`) — 개발 스킬 사용 시
 
 ### 의존성 설치
 
 ```bash
-pip install fastmcp streamlit markdown anthropic
+pip install -r requirements.txt
 ```
+
+`requirements.txt` 포함 패키지: `mcp[cli]`, `pypdf`, `flask`, `markdown2`
 
 ### 1. MCP 서버 등록
 
-프로젝트 `.claude/settings.json`에 추가:
+`.claude/settings.json`과 `.mcp.json` 파일에 Python 절대경로를 환경에 맞게 수정합니다:
 
 ```json
 {
   "mcpServers": {
     "llm-wiki": {
-      "command": "python",
-      "args": ["mcp_server/server.py"],
-      "cwd": "<이 프로젝트 절대 경로>"
+      "command": "<python 절대경로>",
+      "args": ["<프로젝트 절대경로>/mcp_server/server.py"],
+      "env": {
+        "PYTHONPATH": "<프로젝트 절대경로>/mcp_server"
+      }
     }
   }
 }
@@ -101,10 +110,10 @@ Claude Code가 자동으로 `CLAUDE.md`를 읽고 MCP 도구를 사용할 수 �
 ### 3. Wiki 뷰어 실행 (별도 터미널)
 
 ```bash
-streamlit run viewer/app.py
+python -m flask --app viewer/app.py run
 ```
 
-브라우저에서 `http://localhost:8501` 접속.
+브라우저에서 `http://localhost:5000` 접속.
 
 ---
 
@@ -112,7 +121,7 @@ streamlit run viewer/app.py
 
 ### 새 소스 인제스트
 
-1. Streamlit 사이드바 **"소스 업로드"** 에서 PDF/MD 파일 선택
+1. 뷰어 사이드바 하단 **"소스 업로드"** 에서 PDF/MD/TXT 파일 선택
 2. 업로드 완료 후 우측 채팅 패널에 입력:
    ```
    langchain-docs.pdf 인제스트해줘
@@ -166,6 +175,8 @@ LangGraph 페이지에 StateGraph 설명 추가해줘
 LLM-Wiki/
 ├── CLAUDE.md                    ← 에이전트 운영 스키마
 ├── README.md                    ← 이 파일
+├── requirements.txt             ← Python 의존성
+├── .mcp.json                    ← Flask 뷰어용 MCP 서버 설정
 ├── .gitignore
 │
 ├── docs/
@@ -177,11 +188,17 @@ LLM-Wiki/
 │   └── health/                  ← /health 점검 로그 (날짜별)
 │
 ├── mcp_server/
-│   ├── server.py                ← FastMCP 기반 MCP 서버
+│   ├── server.py                ← MCP 서버 (7개 도구)
 │   └── wiki_store.py            ← Wiki I/O 레이어
 │
 ├── viewer/
-│   └── app.py                   ← Streamlit Wiki 뷰어
+│   ├── app.py                   ← Flask 뷰어 (라우팅)
+│   ├── templates/
+│   │   ├── layout.html          ← 3패널 기본 템플릿
+│   │   └── page.html            ← Wiki 페이지 뷰
+│   └── static/
+│       ├── style.css            ← 레이아웃·채팅 스타일
+│       └── chat.js              ← 채팅·업로드 AJAX 처리
 │
 ├── wiki/                        ← Wiki 콘텐츠 (에이전트 관리)
 │   ├── index.md
@@ -191,9 +208,10 @@ LLM-Wiki/
 │   ├── patterns/
 │   └── sources/
 │
-├── raw/                         ← 원본 소스 파일 (Streamlit 업로드로만 추가)
+├── raw/                         ← 원본 소스 파일 (뷰어 업로드로만 추가)
 │
 ├── .claude/
+│   ├── settings.json            ← MCP 서버 등록 + 권한 설정
 │   ├── skills/                  ← 스킬 정의 (7개)
 │   ├── agents/                  ← 에이전트 명세 (impl, verify)
 │   └── commands/                ← 슬래시 커맨드 (/health)
@@ -210,6 +228,6 @@ LLM-Wiki/
 ## 참고
 
 - [Andrej Karpathy's LLM Wiki Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
-- [FastMCP Documentation](https://github.com/jlowin/fastmcp)
+- [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
 - [LangChain Documentation](https://python.langchain.com)
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph)

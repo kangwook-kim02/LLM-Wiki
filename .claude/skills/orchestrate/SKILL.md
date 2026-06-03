@@ -58,8 +58,11 @@ agents/verify-agent.md 의 절차를 따른다.
 
 **PASS인 경우:**
 
+커밋 전에 `docs/decision-log.md`에 이번 이슈 작업 중 발생한 설계·구조·방향 결정을 라운드로 추가한다.
+기록할 내용이 없으면 생략한다.
+
 ```bash
-git add {impl-agent가 변경한 파일들}
+git add {impl-agent가 변경한 파일들} docs/decision-log.md
 git commit -m "#{$ISSUE_N} {$ISSUE_TITLE}"
 gh pr create \
   --title "{$ISSUE_TITLE}" \

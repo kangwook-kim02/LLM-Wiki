@@ -2,6 +2,37 @@
 type: log
 ---
 
+## 2026-06-03 -- [M3] query 스킬 동작 검증 (이슈 #5)
+
+**작업자:** impl-agent
+**작업 유형:** query 스킬 동작 검증 (wiki_search -> wiki_read 순서 테스트)
+
+### 테스트 질의 결과
+
+**Q1: RAG란 무엇인가?**
+- 사용 도구: wiki_search(RAG) -> wiki_read(concepts/rag), wiki_read(concepts/retriever-generator-architecture)
+- 답변 출처: [[concepts/rag]], [[concepts/retriever-generator-architecture]], [[concepts/parametric-memory]], [[concepts/non-parametric-memory]]
+- 답변 요약: RAG는 사전학습된 parametric 메모리(BART seq2seq)와 non-parametric 메모리(DPR 기반 문서 인덱스)를 결합하여 언어 생성을 수행하는 파인튜닝 방법론이다. 입력 x가 주어지면 retriever가 top-K 문서 z를 검색하고, generator가 x와 z를 조건으로 출력 y를 생성한다. [[patterns/rag-sequence]]와 [[patterns/rag-token]] 두 가지 변형이 있다.
+- 결과: PASS (Wiki 기반 답변, 출처 slug 포함)
+
+**Q2: RAG-Sequence와 RAG-Token의 차이는?**
+- 사용 도구: wiki_search(RAG-Sequence) -> wiki_search(RAG-Token) -> wiki_read(patterns/rag-sequence), wiki_read(patterns/rag-token)
+- 답변 출처: [[patterns/rag-sequence]], [[patterns/rag-token]], [[sources/rag-paper-lewis-2020]]
+- 답변 요약: RAG-Sequence는 전체 출력 시퀀스에 동일한 문서를 사용하여 marginalization하며(수식: sum_{z} p(z|x) * p(y|x,z)), 문서 일관성이 높아 Open-Domain QA에 유리하지만 디코딩이 느리다. RAG-Token은 각 출력 토큰마다 다른 문서를 참조할 수 있어(수식: prod_i sum_{z} p(z|x) * p(y_i|x,z,...)) 여러 문서 정보 결합이 필요한 Jeopardy 생성 태스크에 우수하며 표준 beam decoder로 효율적으로 디코딩 가능하다.
+- 결과: PASS (두 패턴 비교 답변, 출처 slug 포함)
+
+**Q3: DPR이 RAG 시스템에서 어떤 역할을 하는가?**
+- 사용 도구: wiki_search(DPR) -> wiki_read(concepts/dense-passage-retrieval), wiki_read(frameworks/dpr)
+- 답변 출처: [[concepts/dense-passage-retrieval]], [[frameworks/dpr]], [[frameworks/faiss]], [[concepts/mips]], [[concepts/rag]]
+- 답변 요약: DPR은 RAG의 retriever 컴포넌트로서, BERT 기반 bi-encoder(질의 인코더 BERT_q + 문서 인코더 BERT_d)를 사용해 입력 질의와 문서를 밀집 벡터로 인코딩하고 내적 유사도([[concepts/mips]])로 top-K 관련 문서를 검색한다. RAG 파인튜닝 시 문서 인코더는 고정하고 질의 인코더만 BART generator와 함께 end-to-end로 학습되며, [[frameworks/faiss]] HNSW 인덱스를 통해 sub-linear 시간에 검색이 수행된다.
+- 결과: PASS (DPR-RAG 관계 답변, 출처 slug 포함)
+
+### 검증 결과 요약
+- wiki_search -> wiki_read 순서로 MCP 도구가 정상 동작함을 확인
+- 3개 질의 모두 Wiki 기반 답변 생성 및 [[slug]] 출처 포함
+- 완료 기준 3/3 충족
+
+
 # Wiki 작업 이력
 
 append-only. 최신 항목이 위에 위치한다.

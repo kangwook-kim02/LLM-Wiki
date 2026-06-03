@@ -565,8 +565,105 @@ Claude Code의 `Skill` 도구는 `skillname/SKILL.md` 구조(서브디렉토리 
 
 ---
 
+## Round 16 — wiki_store.py 구현 세부 설계 결정
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+이슈 #1 작업 중 `mcp_server/wiki_store.py` 구현 과정에서 세부 설계를 결정함.
+
+### 결정 사항
+
+**Q1. YAML frontmatter 파서 — PyYAML vs 표준 라이브러리?**
+
+- **결론**: 표준 라이브러리(문자열 파싱)만 사용. `key: value` 단일 줄 형태만 지원.
+- **근거**: 외부 의존성 최소화. MVP 범위에서 복잡한 YAML 구조(중첩, 콜론 포함 값 등) 불필요.
+
+**Q2. frontmatter 직렬화 함수 필요성?**
+
+- verify-agent가 1차 검증에서 `_serialize_frontmatter` 미구현을 FAIL 항목으로 지적.
+- **결론**: `_serialize_frontmatter(meta: dict) -> str` 추가. `---\nkey: value\n---\n` 형식 반환, 빈 dict 시 `''` 반환.
+
+**Q3. 에러 처리 방식?**
+
+- **결론**: 존재하지 않는 리소스 접근 시 `FileNotFoundError` raise. 호출자(MCP 서버 레이어)가 핸들링하는 구조.
+
+**Q4. `raw_save` / `raw_read` 타입?**
+
+- **결론**: bytes 처리 (Round 4 결정 유지). Streamlit `UploadedFile.read()`가 bytes 반환하므로 변환 없이 그대로 저장.
+
+**Q5. slug 루트 레벨 처리?**
+
+- **결론**: `index`, `log` 같은 루트 slug는 `wiki/index.md`, `wiki/log.md`로 매핑. 카테고리 레벨(`concepts/rag`)과 동일 로직으로 처리.
+
+### 구현 결과
+
+- `mcp_server/__init__.py` 신규 생성
+- `mcp_server/wiki_store.py` 신규 작성 (209줄), 7개 public API + 5개 내부 헬퍼
+- impl-agent → verify-agent 1회 FAIL 후 재시도 → PASS (frontmatter 직렬화 추가, dead import 제거)
+
+**영향 받은 파일:**
+- `mcp_server/__init__.py` — 신규
+- `mcp_server/wiki_store.py` — 신규
+
+---
+
+## Round 17 — orchestrate 스킬 PR 자동 생성 적용
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 문제 제기
+
+사용자: "앞으로 매번 'PR 만들어줘'라고 입력하기 귀찮다. 자동으로 만들어지게 해달라."
+
+### 결정
+
+orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 자동 실행한다.
+
+**변경 전:** 커밋 후 "PR을 생성하려면: 'PR 만들어줘'" 안내
+**변경 후:** 커밋 후 즉시 PR 생성, URL 사용자에게 보고
+
+**원칙 변경:**
+- 기존: "사용자 승인 없이 `git push` 또는 PR 생성 금지"
+- 변경: "커밋 후 PR은 자동으로 생성한다. `git push --force` 또는 머지는 여전히 금지"
+
+**영향 받은 파일:**
+- `.claude/skills/orchestrate/SKILL.md` — Phase 3 PASS 절차 및 원칙 수정
+
+---
+
+## Round 18 — raw/ 디렉토리 Git 관리 정책 결정
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 문제 제기
+
+사용자: "raw 폴더 안에 있는 내용은 업로드 안되게 하되, 뭘 저장해야 하는지 설명하는 md 파일은 남기고 싶다."
+
+### 결정
+
+`.gitignore` 규칙 변경:
+- 기존: `raw/` (디렉토리 전체 무시)
+- 변경: `raw/*` (내용물 무시) + `!raw/README.md` (README 예외 추적)
+
+`raw/README.md` 신규 생성 — 저장 대상 파일 형식, 추가 방법, 주의사항 기술.
+
+**근거:**
+- PDF 등 원본 파일은 용량이 크고 민감할 수 있어 Git 추적 불필요
+- README는 협업자(또는 새 세션의 에이전트)가 `raw/` 용도를 파악하기 위해 Git 추적 필요
+
+**영향 받은 파일:**
+- `.gitignore` — `raw/` → `raw/*` + `!raw/README.md`
+- `raw/README.md` — 신규 생성
+
+---
+
 ## 향후 라운드 예정
 
-- **Round 16**: MCP 서버 구현 세부 결정 (wiki_store 및 raw_store 설계) — 이슈 #1 작업 시
-- **Round 17**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식) — 이슈 #6 작업 시
-- **Round 18**: 최초 인제스트 소스 선정 및 실행 — 이슈 #4 작업 시
+- **Round 19**: server.py FastMCP 구현 세부 결정 — 이슈 #2 작업 시
+- **Round 20**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식) — 이슈 #6 작업 시
+- **Round 21**: 최초 인제스트 소스 선정 및 실행 — 이슈 #4 작업 시

@@ -252,8 +252,57 @@
 
 ---
 
+---
+
+## Round 7 — impl/verify 에이전트 및 orchestrate 스킬 추가
+
+**날짜**: 2026-06-03
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 요청
+
+"구현 에이전트, 검증 에이전트를 만들고 이를 처리하는 오케스트레이션 스킬을 만들어서 github-issue-work에서 호출하도록 해달라"
+
+### 논의
+
+**구조 검증:**
+- 스킬은 LLM이 따르는 지침이므로 "스킬이 스킬을 호출"한다는 것은 "해당 스킬의 지침을 따르라"는 의미
+- 에이전트는 `Agent` 도구로 스폰되는 독립 서브프로세스, `.claude/agents/`에 명세 정의
+- impl → verify 순서가 핵심 (역방향 불가)
+
+**검증 실패 처리 방안:**
+- A안: 무한 재시도 → 루프 위험
+- B안: 1회 재시도 후 실패 시 사용자 보고 → 채택
+
+**최종 구조:**
+```
+github-issue-work (Step 1~3: 파악/브랜치/계획)
+    ↓ Step 4에서 위임
+orchestrate (skill)
+    ├── impl-agent 스폰 → 구현
+    └── verify-agent 스폰 → 검증
+         ├── PASS → 커밋
+         └── FAIL → 1회 재시도 → 실패 시 사용자 보고
+```
+
+### 결정
+
+- `.claude/agents/impl-agent.md` 신규 생성
+- `.claude/agents/verify-agent.md` 신규 생성
+- `.claude/skills/orchestrate.md` 신규 생성
+- `github-issue-work.md` Step 4~5 수정 (직접 구현 → orchestrate 위임)
+
+**영향 받은 파일:**
+- `.claude/agents/impl-agent.md` — 신규
+- `.claude/agents/verify-agent.md` — 신규
+- `.claude/skills/orchestrate.md` — 신규
+- `.claude/skills/github-issue-work.md` — Step 4~5 수정
+- `CLAUDE.md` — 스킬 테이블에 orchestrate 추가
+
+---
+
 ## 향후 라운드 예정
 
-- **Round 7**: MCP 서버 구현 세부 결정 (wiki_store 및 raw_store 설계)
-- **Round 8**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식)
-- **Round 9**: 최초 인제스트 소스 선정 및 실행
+- **Round 8**: MCP 서버 구현 세부 결정 (wiki_store 및 raw_store 설계)
+- **Round 9**: Streamlit 뷰어 UI 상세 구성 (채팅 패널 Claude API 연동 방식)
+- **Round 10**: 최초 인제스트 소스 선정 및 실행

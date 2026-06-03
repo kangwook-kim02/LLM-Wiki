@@ -48,18 +48,22 @@ git checkout -b issue-$N/{slug}
 진행할까요?
 ```
 
-### Step 4 — 작업 실행
+### Step 4 — 구현 및 검증 (orchestrate 스킬에 위임)
 
-승인 후 계획에 따라 코드·문서를 수정한다.
+사용자 승인 후 orchestrate 스킬을 실행한다.
+아래 컨텍스트를 전달한다:
 
-### Step 5 — 커밋
+- `$ISSUE_N` = 이슈 번호
+- `$ISSUE_TITLE` = 이슈 제목
+- `$ISSUE_BODY` = 이슈 본문
+- `$WORK_PLAN` = Step 3에서 사용자가 승인한 작업 계획
 
-```bash
-git add {변경된 파일들}
-git commit -m "#{$N} {변경 내용 한 줄 요약}"
-```
+orchestrate 스킬이 impl-agent → verify-agent 순으로 실행하고
+커밋까지 처리한다. 결과를 기다린다.
 
-### Step 6 — PR 생성 (작업 완료 시)
+### Step 5 — PR 생성 (사용자 요청 시)
+
+orchestrate가 커밋 완료를 보고한 뒤, 사용자가 PR을 요청하면:
 
 ```bash
 gh pr create \
@@ -82,5 +86,5 @@ EOF
 
 - 작업 전 반드시 계획을 사용자에게 보여주고 확인받는다
 - 브랜치 없이 main에서 직접 작업하지 않는다
-- 커밋 메시지에 `#{N}` 이슈 번호를 반드시 포함한다
+- Step 4는 반드시 orchestrate 스킬을 통해 실행한다 (직접 구현 금지)
 - PR은 사용자가 명시적으로 요청할 때만 생성한다

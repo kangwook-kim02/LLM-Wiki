@@ -58,6 +58,7 @@
 | **wiki-edit** | `.claude/skills/wiki-edit.md` | 특정 페이지 편집 요청 |
 | **github-issue-create** | `.claude/skills/github-issue-create.md` | 이슈 등록 요청 *(개발 전용)* |
 | **github-issue-work** | `.claude/skills/github-issue-work.md` | 특정 이슈 번호 작업 시작 *(개발 전용)* |
+| **orchestrate** | `.claude/skills/orchestrate.md` | impl-agent → verify-agent 조율 *(github-issue-work 내부 호출)* |
 
 ---
 

@@ -271,6 +271,9 @@ def api_search():
     results = wiki_search(query)
     # 내부 관리 slug(index, log)는 결과에서 제외
     results = [r for r in results if r["slug"] not in _HIDDEN_SLUGS]
+    # 제목 일치 결과를 본문만 일치하는 결과보다 먼저 표시
+    query_lower = query.lower()
+    results.sort(key=lambda r: 0 if query_lower in r["title"].lower() else 1)
     return jsonify(results)
 
 

@@ -27,11 +27,11 @@
 │   ├── wiki-schema.md     ← Wiki 페이지 유형별 템플릿
 │   └── health/            ← /health 커맨드 실행 로그 (날짜별)
 │
-├── mcp_server/            ← FastMCP 기반 MCP 서버 (구현 예정)
+├── mcp_server/            ← MCP 서버 (mcp[cli] 기반)
 │   ├── server.py
 │   └── wiki_store.py
 │
-├── viewer/                ← Streamlit Wiki 뷰어 (구현 예정)
+├── viewer/                ← Flask Wiki 뷰어 (3패널: 사이드바/본문/채팅)
 │   └── app.py
 │
 ├── wiki/                  ← 에이전트가 생성·관리하는 Markdown 페이지
@@ -42,7 +42,7 @@
 │   ├── patterns/
 │   └── sources/
 │
-├── raw/                   ← 원본 소스 파일 (불변, Streamlit 업로드로만 추가)
+├── raw/                   ← 원본 소스 파일 (불변, Flask 채팅 패널 업로드로만 추가)
 │
 ├── .claude/
 │   ├── skills/            ← 스킬 정의 (각 스킬: skillname/SKILL.md)
@@ -67,7 +67,7 @@
 | `wiki_write` | `wiki_write(slug: str, content: str)` | 페이지 생성/덮어쓰기 |
 | `wiki_search` | `wiki_search(query: str)` | 제목·본문 키워드 검색 |
 | `wiki_delete` | `wiki_delete(slug: str)` | 페이지 삭제 |
-| `raw_save` | `raw_save(filename: str, content: bytes)` | 업로드 파일을 `raw/`에 저장 (Streamlit 호출) |
+| `raw_save` | `raw_save(filename: str, content: bytes)` | 업로드 파일을 `raw/`에 저장 (Flask viewer 호출) |
 | `raw_read` | `raw_read(filename: str)` | `raw/` 파일 내용 반환 (인제스트용) |
 
 페이지 유형별 템플릿 → `docs/wiki-schema.md` 참조
@@ -83,6 +83,7 @@
 | **ingest** | `.claude/skills/ingest/SKILL.md` | 소스 파일 추가/인제스트 요청 |
 | **query** | `.claude/skills/query/SKILL.md` | 개념·기술 질문 |
 | **wiki-edit** | `.claude/skills/wiki-edit/SKILL.md` | 특정 페이지 편집 요청 |
+| **wiki-check** | `.claude/skills/wiki-check/SKILL.md` | Wiki 콘텐츠 상태 점검 요청 |
 
 ### 개발 전용 스킬
 

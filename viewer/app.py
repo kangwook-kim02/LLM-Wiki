@@ -196,8 +196,20 @@ def chat():
         return jsonify({"ok": False, "error": "메시지가 비어 있습니다."}), 400
 
     try:
+        # Windows에서 claude는 .cmd 래퍼로 설치됨
+        # --allowedTools: 비대화형 subprocess에서 필요한 MCP 도구만 허용
+        claude_cmd = "claude.cmd" if sys.platform == "win32" else "claude"
+        _ALLOWED_TOOLS = ",".join([
+            "mcp__llm-wiki__wiki_list",
+            "mcp__llm-wiki__wiki_read",
+            "mcp__llm-wiki__wiki_write",
+            "mcp__llm-wiki__wiki_search",
+            "mcp__llm-wiki__wiki_delete",
+            "mcp__llm-wiki__raw_save",
+            "mcp__llm-wiki__raw_read",
+        ])
         result = subprocess.run(
-            ["claude", "-p", message],
+            [claude_cmd, "-p", message, "--allowedTools", _ALLOWED_TOOLS],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -212,6 +224,36 @@ def chat():
         return jsonify({"reply": "오류: claude CLI를 찾을 수 없습니다. claude 명령어가 PATH에 있는지 확인하세요.", "error": True})
     except Exception as exc:  # noqa: BLE001
         return jsonify({"reply": f"오류: {exc}", "error": True})
+
+
+@app.route("/api/page/<path:slug>")
+def api_page(slug: str):
+    """AJAX 네비게이션용 JSON 엔드포인트 — 본문 HTML만 반환."""
+    try:
+        raw_content = wiki_read(slug)
+    except FileNotFoundError:
+        html = render_template(
+            "_content.html",
+            content=f"<p>페이지를 찾을 수 없습니다: <code>{slug}</code></p>",
+            not_found=True,
+            meta={},
+        )
+        return jsonify({"ok": False, "slug": slug, "title": slug, "html": html}), 404
+
+    meta, body = _strip_frontmatter(raw_content)
+    html_content = _render_markdown(body)
+    html = render_template(
+        "_content.html",
+        content=html_content,
+        not_found=False,
+        meta=meta,
+    )
+    return jsonify({
+        "ok": True,
+        "slug": slug,
+        "title": meta.get("title", slug),
+        "html": html,
+    })
 
 
 if __name__ == "__main__":

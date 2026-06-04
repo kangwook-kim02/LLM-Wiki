@@ -2,6 +2,62 @@
 type: log
 ---
 
+## 2026-06-04 — LangChain 기초 인제스트 완료 (누락 페이지 보완)
+
+- **소스:** `raw/LangChain 기초.pdf`
+- **작업:** 이전 세션에서 미생성된 7개 페이지 생성 완료
+- **소스:** [[sources/langchain-basics-mandu]]
+
+### 신규 생성 페이지 (7개)
+
+**Frameworks (3개)**
+- `frameworks/langchain` — LangChain 프레임워크
+- `frameworks/chatopenai` — ChatOpenAI 래퍼 클래스
+- `frameworks/langsmith` — LangSmith 추적/모니터링 플랫폼
+
+**Concepts (1개)**
+- `concepts/streaming` — 스트리밍 응답
+
+**Patterns (3개)**
+- `patterns/runnable-passthrough` — RunnablePassthrough 패턴
+- `patterns/runnable-parallel` — RunnableParallel 패턴
+- `patterns/runnable-lambda` — RunnableLambda 패턴
+
+### 현재 Wiki 총 페이지 수: 33개 (index, log 제외)
+
+---
+
+## 2026-06-04 — LangChain 기초 인제스트
+
+- **소스:** `raw/LangChain 기초.pdf` (mandu.log, 2025-11-04)
+- **생성:** 12개 페이지
+- **업데이트:** `index` (21 → 33페이지)
+- **소스:** [[sources/langchain-basics-mandu]]
+
+### 생성된 페이지
+
+**Sources (1개)**
+- `sources/langchain-basics-mandu` — LangChain 기초 블로그 포스트 소스 요약
+
+**Concepts (5개)**
+- `concepts/lcel` — LCEL (LangChain Expression Language)
+- `concepts/runnable` — Runnable 인터페이스
+- `concepts/prompt-template` — PromptTemplate
+- `concepts/prompt-caching` — 프롬프트 캐싱 (Token Caching / Prefix Caching)
+- `concepts/streaming` — 스트리밍 응답
+
+**Frameworks (3개)**
+- `frameworks/langchain` — LangChain 프레임워크
+- `frameworks/langsmith` — LangSmith 추적/모니터링 플랫폼
+- `frameworks/chatopenai` — ChatOpenAI 래퍼 클래스
+
+**Patterns (3개)**
+- `patterns/runnable-passthrough` — RunnablePassthrough 패턴
+- `patterns/runnable-parallel` — RunnableParallel 패턴
+- `patterns/runnable-lambda` — RunnableLambda 패턴
+
+---
+
 ## 2026-06-03 -- [M3] query 스킬 동작 검증 (이슈 #5)
 
 **작업자:** impl-agent

@@ -43,88 +43,6 @@ html, body {
   overflow-y: auto;
 }
 
-/* ===== 파일 업로드 섹션 (V-03) ===== */
-.upload-section {
-  padding: 12px 16px 16px;
-  border-top: 1px solid #d0d7de;
-  background: #f6f8fa;
-  flex-shrink: 0;
-}
-
-.upload-section-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #6e7781;
-  margin-bottom: 8px;
-}
-
-.upload-file-input {
-  display: none;
-}
-
-.upload-file-label {
-  display: inline-block;
-  padding: 4px 10px;
-  background: #0969da;
-  color: #ffffff;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.upload-file-label:hover {
-  background: #0550ae;
-}
-
-.upload-file-name {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.78rem;
-  color: #6e7781;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.upload-btn {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  padding: 6px 0;
-  background: #2da44e;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.upload-btn:hover {
-  background: #218741;
-}
-
-.upload-btn:disabled {
-  background: #94d3a2;
-  cursor: not-allowed;
-}
-
-.upload-result {
-  margin-top: 8px;
-  font-size: 0.8rem;
-  min-height: 1.2em;
-}
-
-.upload-result.success {
-  color: #1a7f37;
-}
-
-.upload-result.error {
-  color: #cf222e;
-}
 
 .sidebar-header {
   padding: 16px 20px;
@@ -508,12 +426,50 @@ html, body {
 
 .chat-input-area form {
   display: flex;
-  gap: 8px;
-  align-items: flex-end;
+  flex-direction: column;
+  gap: 6px;
 }
 
+/* 파일 첨부 칩 */
+.chat-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #ddf4ff;
+  border: 1px solid #79c0ff;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: #0550ae;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.chat-file-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.chat-file-chip-remove {
+  background: none;
+  border: none;
+  color: #0550ae;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0 2px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.chat-file-chip-remove:hover {
+  color: #cf222e;
+}
+
+/* textarea */
 .chat-textarea {
-  flex: 1;
+  width: 100%;
   padding: 8px 10px;
   border: 1px solid #d0d7de;
   border-radius: 8px;
@@ -523,6 +479,7 @@ html, body {
   outline: none;
   transition: border-color 0.15s;
   line-height: 1.45;
+  background: #ffffff;
 }
 
 .chat-textarea:focus {
@@ -530,12 +487,42 @@ html, body {
   box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
 }
 
+/* 파일첨부 + 전송 툴바 */
+.chat-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-attach-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #24292f;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  height: 32px;
+}
+
+.chat-attach-label:hover {
+  background: #f0f3f6;
+  border-color: #8c959f;
+}
+
 .chat-send-btn {
-  padding: 8px 14px;
+  padding: 0 16px;
+  height: 32px;
   background: #0969da;
   color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 0.85rem;
   cursor: pointer;
   transition: background 0.15s;
@@ -549,6 +536,18 @@ html, body {
 .chat-send-btn:disabled {
   background: #84b9f5;
   cursor: not-allowed;
+}
+
+/* 시스템 메시지 버블 (업로드 결과 등) */
+.chat-bubble.system {
+  align-self: center;
+  background: #fff8c5;
+  color: #633c01;
+  border: 1px solid #f7c948;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  text-align: center;
+  max-width: 95%;
 }
 
 /* ===== 스크롤바 스타일 ===== */

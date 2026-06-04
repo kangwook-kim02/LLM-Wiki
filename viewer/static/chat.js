@@ -1,12 +1,84 @@
 /**
- * chat.js — 채팅 패널 + 파일 업로드 AJAX 핸들러 (V-03, V-04)
+ * chat.js — 채팅 패널 + AJAX 네비게이션
  *
  * - 채팅: POST /chat  {"message": "..."} → {"reply": "..."}
  * - 업로드: POST /upload  FormData → {"ok": true, "filename": "..."}
+ * - 네비게이션: GET /api/page/<slug> → 본문만 교체 (채팅 패널 유지)
  */
 
 (function () {
   "use strict";
+
+  /* ===== AJAX 네비게이션 ===== */
+
+  const mainContent = document.querySelector(".main-content");
+
+  function setActiveNav(slug) {
+    document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+    const link = document.querySelector(`.nav-link[href="/page/${slug}"]`);
+    if (link) link.closest(".nav-item").classList.add("active");
+  }
+
+  async function navigateTo(slug, pushState) {
+    try {
+      const res  = await fetch("/api/page/" + slug);
+      const data = await res.json();
+
+      if (mainContent) {
+        mainContent.innerHTML = data.html;
+        mainContent.scrollTop = 0;
+      }
+
+      document.title = data.title ? data.title + " — LLM Wiki" : "LLM Wiki";
+
+      if (pushState) {
+        history.pushState({ slug: slug }, document.title, "/page/" + slug);
+      }
+
+      setActiveNav(slug);
+    } catch (err) {
+      console.error("Navigation error:", err);
+    }
+  }
+
+  // 사이드바 링크 클릭 인터셉트
+  document.querySelectorAll(".nav-link").forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      const slug = this.getAttribute("href").replace("/page/", "");
+      navigateTo(slug, true);
+    });
+  });
+
+  // 본문 내 내부 링크 인터셉트 (이벤트 위임 — AJAX 교체 후에도 동작)
+  if (mainContent) {
+    mainContent.addEventListener("click", function (e) {
+      const link = e.target.closest("a");
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (href && href.startsWith("/page/")) {
+        e.preventDefault();
+        const slug = href.replace("/page/", "");
+        navigateTo(slug, true);
+      }
+    });
+  }
+
+  // 브라우저 뒤로가기 / 앞으로가기
+  window.addEventListener("popstate", function (e) {
+    if (e.state && e.state.slug) {
+      navigateTo(e.state.slug, false);
+    }
+  });
+
+  // 현재 페이지 slug를 초기 history state에 등록
+  (function () {
+    const active = document.querySelector(".nav-item.active .nav-link");
+    if (active) {
+      const slug = active.getAttribute("href").replace("/page/", "");
+      history.replaceState({ slug: slug }, document.title, window.location.pathname);
+    }
+  })();
 
   /* ===== 채팅 패널 ===== */
 
@@ -16,11 +88,13 @@
   const chatSpinner  = document.getElementById("chat-spinner");
   const sendBtn      = chatForm ? chatForm.querySelector(".chat-send-btn") : null;
 
-  /**
-   * 메시지 버블을 채팅 목록에 추가하고 최하단으로 스크롤한다.
-   * @param {string} text
-   * @param {"user"|"assistant"|"error"} role
-   */
+  const fileInput    = document.getElementById("chat-file-input");
+  const fileChip     = document.getElementById("chat-file-chip");
+  const fileChipName = document.getElementById("chat-file-chip-name");
+  const fileRemove   = document.getElementById("chat-file-remove");
+
+  /* ===== 메시지 버블 ===== */
+
   function appendMessage(text, role) {
     const bubble = document.createElement("div");
     bubble.className = "chat-bubble " + role;
@@ -29,127 +103,132 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  /** 전송 중 UI 잠금 */
+  /* ===== 로딩 상태 ===== */
+
   function setLoading(on) {
     chatSpinner.classList.toggle("active", on);
-    if (sendBtn) sendBtn.disabled = on;
-    if (chatInput) chatInput.disabled = on;
+    if (sendBtn)    sendBtn.disabled = on;
+    if (chatInput)  chatInput.disabled = on;
+    if (fileInput)  fileInput.disabled = on;
   }
 
-  if (chatForm) {
-    chatForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
+  /* ===== 파일 칩 관리 ===== */
 
-      const message = chatInput.value.trim();
-      if (!message) return;
+  function showFileChip(name) {
+    fileChipName.textContent = name;
+    fileChip.hidden = false;
+  }
 
-      // 사용자 메시지 표시
-      appendMessage(message, "user");
-      chatInput.value = "";
-      setLoading(true);
+  function clearFile() {
+    if (fileInput)  fileInput.value = "";
+    if (fileChip)   fileChip.hidden = true;
+    if (fileChipName) fileChipName.textContent = "";
+  }
 
-      try {
-        const res = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          appendMessage("오류: 서버 응답 " + res.status + (err.error ? " — " + err.error : ""), "error");
-          return;
-        }
-
-        const data = await res.json();
-        if (data.error) {
-          appendMessage(data.reply || "알 수 없는 오류가 발생했습니다.", "error");
-        } else {
-          appendMessage(data.reply || "(응답 없음)", "assistant");
-        }
-      } catch (err) {
-        appendMessage("네트워크 오류: " + err.message, "error");
-      } finally {
-        setLoading(false);
-        chatInput.focus();
+  if (fileInput) {
+    fileInput.addEventListener("change", function () {
+      const file = fileInput.files[0];
+      if (file) {
+        showFileChip(file.name);
+      } else {
+        clearFile();
       }
     });
+  }
 
-    // Shift+Enter: 줄바꿈, Enter 단독: 전송
-    chatInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        chatForm.dispatchEvent(new Event("submit", { cancelable: true }));
-      }
+  if (fileRemove) {
+    fileRemove.addEventListener("click", function () {
+      clearFile();
     });
   }
 
   /* ===== 파일 업로드 ===== */
 
-  const uploadForm    = document.getElementById("upload-form");
-  const uploadInput   = document.getElementById("upload-file-input");
-  const uploadName    = document.getElementById("upload-file-name");
-  const uploadResult  = document.getElementById("upload-result");
-  const uploadBtn     = uploadForm ? uploadForm.querySelector(".upload-btn") : null;
+  async function uploadFile(file) {
+    appendMessage("📎 " + file.name + " 업로드 중…", "system");
 
-  // 선택된 파일명 표시
-  if (uploadInput) {
-    uploadInput.addEventListener("change", function () {
-      const file = uploadInput.files[0];
-      uploadName.textContent = file ? file.name : "선택된 파일 없음";
-      if (uploadResult) {
-        uploadResult.textContent = "";
-        uploadResult.className = "upload-result";
-      }
-    });
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/upload", { method: "POST", body: formData });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data.ok) {
+      appendMessage("✅ " + data.filename + " 업로드 완료", "system");
+      clearFile();
+      return true;
+    } else {
+      appendMessage("❌ 업로드 실패: " + (data.error || "알 수 없는 오류"), "error");
+      return false;
+    }
   }
 
-  if (uploadForm) {
-    uploadForm.addEventListener("submit", async function (e) {
+  /* ===== 채팅 전송 ===== */
+
+  async function sendMessage(message) {
+    appendMessage(message, "user");
+
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      appendMessage(
+        "오류: 서버 응답 " + res.status + (err.error ? " — " + err.error : ""),
+        "error"
+      );
+      return;
+    }
+
+    const data = await res.json();
+    if (data.error) {
+      appendMessage(data.reply || "알 수 없는 오류가 발생했습니다.", "error");
+    } else {
+      appendMessage(data.reply || "(응답 없음)", "assistant");
+    }
+  }
+
+  /* ===== 폼 제출 ===== */
+
+  if (chatForm) {
+    chatForm.addEventListener("submit", async function (e) {
       e.preventDefault();
 
-      const file = uploadInput && uploadInput.files[0];
-      if (!file) {
-        setUploadResult("파일을 먼저 선택해 주세요.", false);
-        return;
-      }
+      const file    = fileInput && fileInput.files[0];
+      const message = chatInput ? chatInput.value.trim() : "";
 
-      if (uploadBtn) uploadBtn.disabled = true;
+      if (!file && !message) return;
 
-      const formData = new FormData();
-      formData.append("file", file);
+      setLoading(true);
 
       try {
-        const res = await fetch("/upload", {
-          method: "POST",
-          body: formData,
-        });
+        if (file) {
+          const ok = await uploadFile(file);
+          if (!ok) return;
+        }
 
-        const data = await res.json().catch(() => ({}));
-
-        if (res.ok && data.ok) {
-          setUploadResult("업로드 완료: " + data.filename, true);
-          uploadInput.value = "";
-          uploadName.textContent = "선택된 파일 없음";
-        } else {
-          setUploadResult("업로드 실패: " + (data.error || "알 수 없는 오류"), false);
+        if (message) {
+          chatInput.value = "";
+          await sendMessage(message);
         }
       } catch (err) {
-        setUploadResult("네트워크 오류: " + err.message, false);
+        appendMessage("네트워크 오류: " + err.message, "error");
       } finally {
-        if (uploadBtn) uploadBtn.disabled = false;
+        setLoading(false);
+        if (chatInput) chatInput.focus();
       }
     });
-  }
 
-  /**
-   * 업로드 결과 메시지를 표시한다.
-   * @param {string} msg
-   * @param {boolean} success
-   */
-  function setUploadResult(msg, success) {
-    if (!uploadResult) return;
-    uploadResult.textContent = msg;
-    uploadResult.className = "upload-result " + (success ? "success" : "error");
+    if (chatInput) {
+      chatInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          chatForm.dispatchEvent(new Event("submit", { cancelable: true }));
+        }
+      });
+    }
   }
 })();

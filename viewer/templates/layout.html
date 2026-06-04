@@ -34,25 +34,6 @@
         {% endif %}
       </nav>
 
-      <!-- 파일 업로드 폼 (V-03) -->
-      <div class="upload-section">
-        <div class="upload-section-label">파일 업로드</div>
-        <form id="upload-form" enctype="multipart/form-data">
-          <label class="upload-file-label" for="upload-file-input">
-            파일 선택
-          </label>
-          <input
-            id="upload-file-input"
-            type="file"
-            name="file"
-            accept=".pdf,.md,.txt"
-            class="upload-file-input"
-          />
-          <span id="upload-file-name" class="upload-file-name">선택된 파일 없음</span>
-          <button type="submit" class="upload-btn">업로드</button>
-        </form>
-        <div id="upload-result" class="upload-result" aria-live="polite"></div>
-      </div>
     </aside>
 
     <!-- 본문 패널 (V-02) -->
@@ -80,15 +61,26 @@
       <!-- 입력 영역 -->
       <div class="chat-input-area">
         <form id="chat-form">
+          <div id="chat-file-chip" class="chat-file-chip" hidden>
+            <span>📄</span>
+            <span id="chat-file-chip-name" class="chat-file-chip-name"></span>
+            <button type="button" id="chat-file-remove" class="chat-file-chip-remove" aria-label="파일 제거">✕</button>
+          </div>
           <textarea
             id="chat-input"
             name="message"
             class="chat-textarea"
             placeholder="메시지를 입력하세요…"
-            rows="2"
+            rows="3"
             aria-label="채팅 입력"
           ></textarea>
-          <button type="submit" class="chat-send-btn" aria-label="전송">전송</button>
+          <div class="chat-toolbar">
+            <label class="chat-attach-label" for="chat-file-input" title="파일 첨부 (.pdf .md .txt)">
+              📎 파일 첨부
+            </label>
+            <input type="file" id="chat-file-input" accept=".pdf,.md,.txt" hidden>
+            <button type="submit" class="chat-send-btn">전송</button>
+          </div>
         </form>
       </div>
     </section>

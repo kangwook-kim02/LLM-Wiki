@@ -4,12 +4,31 @@
 
 ---
 
-## 프로젝트 개요
+## 프로젝트 소개
 
-**도메인**: LLM Application Frameworks & Agent Systems
+**도메인**: LLM Application Frameworks & Agent Systems (RAG, LangChain, LangGraph)
 **대상 독자**: RAG·LangChain·LangGraph를 학습하거나 실무에 적용하려는 개발자
 
 Andrej Karpathy의 LLM Wiki 패턴을 확장하여, **MCP(Model Context Protocol) 서버**를 중간 계층으로 두는 구조입니다. Claude Code 에이전트는 파일 시스템에 직접 접근하지 않고, MCP 도구를 통해서만 Wiki를 읽고 씁니다.
+
+### 기술 스택
+
+| 영역 | 기술 |
+|------|------|
+| AI 에이전트 | Claude Code (Anthropic) |
+| 에이전트 프로토콜 | MCP (Model Context Protocol) |
+| Wiki 뷰어 | Flask + markdown2 |
+| MCP 서버 | Python (`mcp[cli]`) |
+| 소스 파싱 | pypdf |
+
+### 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| **채팅** | 우측 채팅 패널에서 Claude Code 에이전트와 대화 — 인제스트, 질의응답, 페이지 편집 |
+| **키워드 검색** | 좌측 사이드바 검색창으로 Wiki 페이지 제목·본문 실시간 검색 (제목 매칭 우선) |
+| **MD 렌더링** | 중앙 패널에서 Wiki 페이지를 Markdown → HTML로 변환하여 렌더링 |
+| **소스 업로드** | 사이드바 하단 파일 업로드 → `raw/`에 저장 후 채팅으로 인제스트 트리거 |
 
 ---
 
@@ -47,31 +66,20 @@ Andrej Karpathy의 LLM Wiki 패턴을 확장하여, **MCP(Model Context Protocol
 
 ---
 
-## MCP 도구 목록
+## 환경 세팅
 
-MCP 서버(`mcp_server/server.py`)가 제공하는 7가지 도구:
-
-| 도구 | 호출 주체 | 설명 |
-|------|----------|------|
-| `wiki_list()` | 에이전트 | 전체 위키 페이지 목록(slug) 반환 |
-| `wiki_read(slug)` | 에이전트 | 특정 페이지의 Markdown 내용 반환 |
-| `wiki_write(slug, content)` | 에이전트 | 페이지 생성 또는 수정 |
-| `wiki_search(query)` | 에이전트 | 제목·본문 키워드 검색 |
-| `wiki_delete(slug)` | 에이전트 | 페이지 삭제 |
-| `raw_save(filename, content)` | 에이전트 | 업로드 파일을 `raw/`에 저장 |
-| `raw_read(filename)` | 에이전트 | `raw/` 파일 내용 반환 (인제스트용) |
-
-**slug 형식**: `카테고리/페이지명` — 예) `concepts/rag`, `frameworks/langchain`
-
----
-
-## 실행 방법
-
-### 요구 환경
+### 사전 설치 요구사항
 
 - Python 3.11+
-- Claude Code CLI (`npm install -g @anthropic-ai/claude-code`)
-- GitHub CLI (`gh`) — 개발 스킬 사용 시
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (`npm install -g @anthropic-ai/claude-code`)
+- [GitHub CLI](https://cli.github.com/) (`gh`) — 개발 스킬(이슈·PR) 사용 시
+
+### 저장소 클론
+
+```bash
+git clone https://github.com/kangwook-kim02/LLM-Wiki.git
+cd LLM-Wiki
+```
 
 ### 의존성 설치
 
@@ -81,9 +89,13 @@ pip install -r requirements.txt
 
 `requirements.txt` 포함 패키지: `mcp[cli]`, `pypdf`, `flask`, `markdown2`
 
+---
+
+## 실행 방법
+
 ### 1. MCP 서버 등록
 
-`.claude/settings.json`과 `.mcp.json` 파일에 Python 절대경로를 환경에 맞게 수정합니다:
+`.claude/settings.json`과 `.mcp.json` 두 파일 모두에 Python 및 프로젝트 **절대경로**를 환경에 맞게 수정합니다.
 
 ```json
 {
@@ -98,6 +110,8 @@ pip install -r requirements.txt
   }
 }
 ```
+
+> `.claude/settings.json` — Claude Code CLI용 / `.mcp.json` — Flask 뷰어 채팅 패널용
 
 ### 2. Claude Code 실행
 
@@ -117,9 +131,9 @@ python -m flask --app viewer/app.py run
 
 ---
 
-## 사용 방법
+## LLM Wiki 사용 방법
 
-### 새 소스 인제스트
+### 소스 인제스트
 
 1. 뷰어 사이드바 하단 **"소스 업로드"** 에서 PDF/MD/TXT 파일 선택
 2. 업로드 완료 후 우측 채팅 패널에 입력:
@@ -129,6 +143,8 @@ python -m flask --app viewer/app.py run
 3. 에이전트가 Wiki 페이지 자동 생성 → 중앙 패널에서 즉시 열람 가능
 
 ### 개념 질문
+
+채팅 패널에서 자연어로 질문하면 Wiki 기반으로 답변합니다.
 
 ```
 RAG와 Fine-tuning의 차이가 뭔가요?
@@ -142,30 +158,110 @@ LangGraph 페이지에 StateGraph 설명 추가해줘
 
 ---
 
-## 스킬 & 커맨드
+## 프로젝트 개발 방법
 
-### Wiki 운영 스킬
+이 프로젝트는 Claude Code 스킬 기반으로 이슈 단위 개발 워크플로를 따릅니다.
 
-| 스킬 | 트리거 | 동작 |
-|------|--------|------|
-| **ingest** | 파일 추가/인제스트 요청 | raw_read → 분석 → wiki_write로 페이지 생성 |
-| **query** | 개념·기술 질문 | wiki_search → wiki_read → 답변 합성 |
-| **wiki-edit** | 특정 페이지 편집 요청 | wiki_read → 수정 → wiki_write |
+### 1. 이슈 등록
 
-### 개발 전용 스킬
+`github-issue-create` 스킬로 구조화된 이슈를 생성합니다.
 
-| 스킬 | 트리거 | 동작 |
-|------|--------|------|
-| **github-issue-create** | "이슈 등록해줘" | gh issue create (이슈 템플릿 기반) |
-| **github-issue-work** | "이슈 #N번 작업하자" | 파악 → 브랜치 생성 → orchestrate 위임 |
-| **pr-review** | "PR #N번 리뷰해줘" | 완료 기준·규칙 준수·코드 품질 4관점 리뷰 |
-| **orchestrate** | github-issue-work 내부 호출 | impl-agent → verify-agent 순차 실행 |
+```
+이슈 등록해줘: 키워드 검색 시 제목 우선 정렬 기능
+```
 
-### 커맨드
+GitHub 이슈 템플릿에 맞춰 제목·설명·완료 기준을 포함한 이슈가 자동 생성됩니다.
 
-| 커맨드 | 동작 |
-|--------|------|
-| `/health` | 하네스 구조 점검 + `docs/health/YYYY-MM-DD.md` 로그 저장 |
+### 2. 이슈 작업
+
+`github-issue-work` 스킬로 이슈 번호를 지정해 작업을 시작합니다.
+
+```
+이슈 #8번 작업하자
+```
+
+내부적으로 `orchestrate` 스킬이 두 전문 에이전트를 순차 호출합니다:
+
+```
+impl-agent (구현) → verify-agent (검증) → 필요 시 재구현 핑퐁
+```
+
+- **impl-agent**: 이슈 요구사항을 코드로 구현하고 PR 생성
+- **verify-agent**: 구현 결과를 이슈 완료 기준 대비 검증, 미달 시 impl-agent에 재작업 요청
+
+### 3. 하네스 건강 체크
+
+`/health` 커맨드로 스킬·에이전트·MCP 도구 등 하네스 구조 전체를 점검합니다.
+
+```
+/health
+```
+
+점검 결과는 `docs/health/YYYY-MM-DD.md`에 자동 저장됩니다.
+
+### 4. PR 리뷰 (선택)
+
+`pr-review` 스킬로 머지 전 PR을 검토합니다. 매 PR마다 필수는 아니며 필요할 때 활용합니다.
+
+```
+PR #12번 리뷰해줘
+```
+
+완료 기준 준수, 규칙 위반, 코드 품질 4관점에서 리뷰 리포트를 생성합니다.
+
+---
+
+## MCP 도구
+
+MCP 서버(`mcp_server/server.py`)가 제공하는 7가지 도구입니다. Claude Code 에이전트는 파일 시스템에 직접 접근하지 않고 반드시 이 도구들만 사용합니다.
+
+### 도구 목록
+
+| 도구 | 호출 주체 | 설명 |
+|------|----------|------|
+| `wiki_list()` | 에이전트 | 전체 위키 페이지 목록(slug) 반환 |
+| `wiki_read(slug)` | 에이전트 | 특정 페이지의 Markdown 내용 반환 |
+| `wiki_write(slug, content)` | 에이전트 | 페이지 생성 또는 수정 |
+| `wiki_search(query)` | 에이전트 | 제목·본문 키워드 검색 (제목 매칭 우선) |
+| `wiki_delete(slug)` | 에이전트 | 페이지 삭제 |
+| `raw_save(filename, content)` | Flask 뷰어 | 업로드 파일을 `raw/`에 저장 |
+| `raw_read(filename)` | 에이전트 | `raw/` 파일 내용 반환 (인제스트용) |
+
+**slug 형식**: `카테고리/페이지명` — 예) `concepts/rag`, `frameworks/langchain`
+
+### 도구 동작 흐름
+
+**인제스트 흐름** (소스 파일 → Wiki 페이지 생성)
+
+```
+사용자 파일 업로드
+  → Flask 뷰어: raw_save(filename, content)        # raw/ 에 파일 저장
+  → 사용자: 채팅 패널에서 "파일명 인제스트해줘"
+  → 에이전트: raw_read(filename)                   # 원본 내용 읽기
+  → 에이전트: wiki_write(slug, content)            # 새 페이지 생성
+  → 에이전트: wiki_read("index")                   # 인덱스 읽기
+  → 에이전트: wiki_write("index", updated)         # 인덱스 업데이트
+  → 에이전트: wiki_write("log", appended)          # 작업 이력 기록
+```
+
+**질의응답 흐름** (개념·기술 질문)
+
+```
+사용자: "RAG와 Fine-tuning의 차이가 뭔가요?"
+  → 에이전트: wiki_search(query)                   # 관련 페이지 검색
+  → 에이전트: wiki_read(slug) × N                  # 관련 페이지 내용 읽기
+  → 에이전트: 답변 합성 후 응답
+```
+
+**Wiki 편집 흐름**
+
+```
+사용자: "LangGraph 페이지에 StateGraph 설명 추가해줘"
+  → 에이전트: wiki_search("LangGraph")             # 페이지 slug 탐색
+  → 에이전트: wiki_read(slug)                      # 현재 내용 읽기
+  → 에이전트: wiki_write(slug, updated_content)    # 수정 내용 저장
+  → 에이전트: wiki_write("log", appended)          # 작업 이력 기록
+```
 
 ---
 

@@ -33,12 +33,59 @@
           <p class="sidebar-empty">페이지가 없습니다.</p>
         {% endif %}
       </nav>
+
     </aside>
 
     <!-- 본문 패널 (V-02) -->
     <main class="main-content">
       {% block content %}{% endblock %}
     </main>
+
+    <!-- 채팅 패널 (V-04) -->
+    <section class="chat-panel" aria-label="채팅">
+      <div class="chat-panel-header">Claude 채팅</div>
+
+      <div class="chat-messages" id="chat-messages" aria-live="polite">
+        <div class="chat-bubble assistant">
+          안녕하세요! Wiki에 대해 질문하거나 "인제스트해줘"처럼 작업을 요청하세요.
+        </div>
+      </div>
+
+      <!-- 로딩 스피너 -->
+      <div class="chat-spinner" id="chat-spinner" aria-hidden="true">
+        <div class="spinner-dot"></div>
+        <div class="spinner-dot"></div>
+        <div class="spinner-dot"></div>
+      </div>
+
+      <!-- 입력 영역 -->
+      <div class="chat-input-area">
+        <form id="chat-form">
+          <div id="chat-file-chip" class="chat-file-chip" hidden>
+            <span>📄</span>
+            <span id="chat-file-chip-name" class="chat-file-chip-name"></span>
+            <button type="button" id="chat-file-remove" class="chat-file-chip-remove" aria-label="파일 제거">✕</button>
+          </div>
+          <textarea
+            id="chat-input"
+            name="message"
+            class="chat-textarea"
+            placeholder="메시지를 입력하세요…"
+            rows="3"
+            aria-label="채팅 입력"
+          ></textarea>
+          <div class="chat-toolbar">
+            <label class="chat-attach-label" for="chat-file-input" title="파일 첨부 (.pdf .md .txt)">
+              📎 파일 첨부
+            </label>
+            <input type="file" id="chat-file-input" accept=".pdf,.md,.txt" hidden>
+            <button type="submit" class="chat-send-btn">전송</button>
+          </div>
+        </form>
+      </div>
+    </section>
   </div>
+
+  <script src="{{ url_for('static', filename='chat.js') }}"></script>
 </body>
 </html>

@@ -842,3 +842,166 @@ orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 �
 - `viewer/static/style.css` — 신규
 - `.mcp.json` — 신규
 - `requirements.txt` — 의존성 추가
+
+---
+
+## Round 23 — 채팅 패널 subprocess 설계 세부 결정
+
+**날짜**: 2026-06-04
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+이슈 #7 작업: Flask 파일 업로드 + claude -p subprocess 채팅 패널 구현 (Round 20 결정 실행)
+
+### 결정 사항
+
+**Q1. subprocess timeout 값?**
+
+- **결론**: `timeout=120` (2분). 인제스트처럼 MCP 도구를 여러 번 호출하는 작업이 길어질 수 있음.
+- TimeoutExpired, FileNotFoundError, 일반 Exception 세 경우를 각각 처리하여 한국어 오류 메시지 반환.
+
+**Q2. 파일 업로드 — MCP `raw_save` 경유 vs 직접 호출?**
+
+- **결론**: `wiki_store.raw_save(filename, bytes)` 직접 호출 (MCP 불필요). Round 20 결정 유지.
+- 근거: 뷰어 서버가 같은 프로세스에서 wiki_store를 import하므로 MCP 경유는 오버헤드.
+
+**Q3. 채팅 패널 스트리밍 여부?**
+
+- **결론**: MVP 비스트리밍 유지. AJAX fetch → JSON 응답 방식.
+- 근거: Round 20 결정 유지. 스트리밍은 SSE/WebSocket 추가 구현 필요, 현재 범위 초과.
+
+**Q4. 3패널 레이아웃 반응형 처리?**
+
+- **결론**: 1024px 이하 화면에서 채팅 패널 숨김. 모바일에서는 2패널(사이드바 + 본문)로 fallback.
+
+### 구현 결과
+
+- `viewer/app.py` — /upload, /chat 라우트 추가
+- `viewer/templates/layout.html` — 3패널 레이아웃 (sidebar + main + chat-panel)
+- `viewer/static/style.css` — 채팅 버블, 스피너, 업로드 폼 스타일
+- `viewer/static/chat.js` — 신규 생성, fetch 기반 채팅·업로드 처리
+
+**영향 받은 파일:**
+- `viewer/app.py` — /upload, /chat 라우트 추가
+- `viewer/templates/layout.html` — 3패널 구조로 변경
+- `viewer/static/style.css` — 채팅 패널 스타일 추가
+- `viewer/static/chat.js` — 신규 생성
+
+---
+
+## Round 24 — 파일 업로드 UI를 채팅 패널로 통합
+
+**날짜**: 2026-06-04
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 문제 제기
+
+사용자: "파일 업로드를 채팅에서 같이 진행할 수 있도록 디자인 변경. 전송 height와 메시지 box height가 맞지 않기 때문에 사이즈 조정."
+
+### 논의
+
+**기존 구조의 문제:**
+- 파일 업로드 폼이 사이드바 하단에 분리되어 있어 "업로드 → 채팅 인제스트 요청" 흐름이 단절됨
+- 채팅 입력 영역이 `textarea + 전송버튼`을 flex 행으로 배치 → 높이 불일치
+
+**개선 방향:**
+- 파일 업로드를 채팅 패널 입력 영역으로 이동 → 업로드 후 바로 채팅으로 인제스트 요청 가능
+- 레이아웃 구조를 flex 행(textarea + 버튼)에서 열(textarea 위, 툴바 아래)로 변경
+
+### 결정
+
+**레이아웃 변경:**
+- `textarea` (전체 너비) + `[📎 파일 첨부] [전송]` 툴바 행으로 분리
+- 파일 선택 시 textarea 위에 파란 칩(📄 파일명 ✕) 표시
+- 전송 클릭 시: 파일 있으면 `POST /upload` 먼저 → 결과를 채팅 버블로 표시 → 메시지 있으면 `POST /chat`
+
+**UX 흐름 통합:**
+- 파일 업로드 성공·실패 결과가 채팅 버블로 표시되어 대화 맥락 유지
+
+**영향 받은 파일:**
+- `viewer/templates/layout.html` — 사이드바 업로드 폼 제거, 채팅 패널 입력 영역에 파일 첨부 버튼·칩 추가
+- `viewer/static/style.css` — 업로드 섹션 스타일 제거, chat-toolbar·chat-file-chip·chat-bubble.system 추가
+- `viewer/static/chat.js` — 업로드·채팅 단일 submit 핸들러로 통합
+
+---
+
+## Round 25 — subprocess MCP 도구 권한 처리 방식 결정
+
+**날짜**: 2026-06-04
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 문제 제기
+
+채팅 패널에서 인제스트 요청 시 Claude subprocess가 MCP 도구 사용 권한을 요청하는 메시지를 응답으로 반환함.
+
+> "MCP 도구 권한이 필요합니다. 사용자 설정에서 `mcp__llm-wiki__*` 도구들을 허용해 주시면 인제스트를 진행할 수 있습니다."
+
+### 논의
+
+**후보 A: `--dangerously-skip-permissions`**
+- 모든 도구 권한을 일괄 허용 (Bash 포함)
+- 비대화형 subprocess 표준 패턴
+- 단점: Bash·Write 등 파일시스템/실행 도구까지 열림 → 보안 위험
+
+**후보 B: `--allowedTools <도구목록>`**
+- 필요한 MCP 도구 7개만 명시적으로 허용
+- 나머지 도구(Bash, Write, Edit 등)는 차단 상태 유지
+- 단점: 목록 관리 필요
+
+### 결정
+
+**`--allowedTools` 채택** (후보 B)
+
+허용 목록: `mcp__llm-wiki__wiki_list`, `wiki_read`, `wiki_write`, `wiki_search`, `wiki_delete`, `raw_save`, `raw_read` 7개.
+
+**근거:** 채팅 패널은 Wiki 관련 작업만 수행해야 함. `--dangerously-skip-permissions`는 이 프로젝트 범위 이상의 권한을 열어주므로 부적절.
+
+**영향 받은 파일:**
+- `viewer/app.py` — `/chat` 라우트의 subprocess 호출에 `--allowedTools` 인수 추가
+
+---
+
+## Round 26 — AJAX 네비게이션 도입으로 채팅 패널 상태 유지
+
+**날짜**: 2026-06-04
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 문제 제기
+
+사용자: "다른 페이지로 이동하면 chat도 리렌더링이 되어 이전 대화는 사라지지만 claude 코드는 계속 돌아간다."
+
+### 논의
+
+**근본 원인:**
+사이드바·본문 내 링크 클릭이 전체 페이지 리로드를 발생시켜 채팅 패널 DOM이 초기화됨.
+
+**해결 후보:**
+| 방식 | 구현 복잡도 | 채팅 유지 | URL 갱신 | 뒤로가기 |
+|------|-----------|---------|---------|---------|
+| localStorage 저장 후 복원 | 낮음 | 지연 복원 (flash 있음) | ✅ | ✅ |
+| AJAX 네비게이션 | 중간 | ✅ (DOM 유지) | ✅ (pushState) | ✅ (popstate) |
+
+**AJAX 방식 설계:**
+- `GET /api/page/<slug>` — 본문 HTML만 JSON으로 반환 (레이아웃 없음)
+- 사이드바 `.nav-link` 클릭 인터셉트 → fetch → `.main-content` innerHTML 교체
+- 마크다운 본문 내 `/page/*` 링크: **이벤트 위임**으로 처리 (AJAX 교체 후에도 동작)
+- URL: `history.pushState` / 뒤로가기: `popstate` 이벤트 처리
+
+**`_content.html` partial 분리 이유:**
+`/api/page/` 엔드포인트와 기존 `/page/` 라우트가 동일한 본문 HTML을 공유하기 위해 Jinja2 partial(`_content.html`)로 추출. `page.html`은 이를 `{% include %}`로 사용.
+
+### 결정
+
+**AJAX 네비게이션 채택**
+
+1. `viewer/templates/_content.html` — 본문 렌더링 partial (신규)
+2. `viewer/app.py` — `/api/page/<path:slug>` JSON 엔드포인트 추가
+3. `viewer/static/chat.js` — 사이드바 링크 인터셉트 + 본문 내 링크 이벤트 위임 추가
+4. `viewer/templates/page.html` — `_content.html` include로 단순화
+
+**영향 받은 파일:**
+- `viewer/templates/_content.html` — 신규
+- `viewer/templates/page.html` — _content.html include로 교체
+- `viewer/app.py` — /api/page/ 엔드포인트 추가
+- `viewer/static/chat.js` — AJAX 네비게이션 로직 추가

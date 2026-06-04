@@ -1,0 +1,234 @@
+/**
+ * chat.js — 채팅 패널 + AJAX 네비게이션
+ *
+ * - 채팅: POST /chat  {"message": "..."} → {"reply": "..."}
+ * - 업로드: POST /upload  FormData → {"ok": true, "filename": "..."}
+ * - 네비게이션: GET /api/page/<slug> → 본문만 교체 (채팅 패널 유지)
+ */
+
+(function () {
+  "use strict";
+
+  /* ===== AJAX 네비게이션 ===== */
+
+  const mainContent = document.querySelector(".main-content");
+
+  function setActiveNav(slug) {
+    document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+    const link = document.querySelector(`.nav-link[href="/page/${slug}"]`);
+    if (link) link.closest(".nav-item").classList.add("active");
+  }
+
+  async function navigateTo(slug, pushState) {
+    try {
+      const res  = await fetch("/api/page/" + slug);
+      const data = await res.json();
+
+      if (mainContent) {
+        mainContent.innerHTML = data.html;
+        mainContent.scrollTop = 0;
+      }
+
+      document.title = data.title ? data.title + " — LLM Wiki" : "LLM Wiki";
+
+      if (pushState) {
+        history.pushState({ slug: slug }, document.title, "/page/" + slug);
+      }
+
+      setActiveNav(slug);
+    } catch (err) {
+      console.error("Navigation error:", err);
+    }
+  }
+
+  // 사이드바 링크 클릭 인터셉트
+  document.querySelectorAll(".nav-link").forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      const slug = this.getAttribute("href").replace("/page/", "");
+      navigateTo(slug, true);
+    });
+  });
+
+  // 본문 내 내부 링크 인터셉트 (이벤트 위임 — AJAX 교체 후에도 동작)
+  if (mainContent) {
+    mainContent.addEventListener("click", function (e) {
+      const link = e.target.closest("a");
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (href && href.startsWith("/page/")) {
+        e.preventDefault();
+        const slug = href.replace("/page/", "");
+        navigateTo(slug, true);
+      }
+    });
+  }
+
+  // 브라우저 뒤로가기 / 앞으로가기
+  window.addEventListener("popstate", function (e) {
+    if (e.state && e.state.slug) {
+      navigateTo(e.state.slug, false);
+    }
+  });
+
+  // 현재 페이지 slug를 초기 history state에 등록
+  (function () {
+    const active = document.querySelector(".nav-item.active .nav-link");
+    if (active) {
+      const slug = active.getAttribute("href").replace("/page/", "");
+      history.replaceState({ slug: slug }, document.title, window.location.pathname);
+    }
+  })();
+
+  /* ===== 채팅 패널 ===== */
+
+  const chatForm     = document.getElementById("chat-form");
+  const chatInput    = document.getElementById("chat-input");
+  const chatMessages = document.getElementById("chat-messages");
+  const chatSpinner  = document.getElementById("chat-spinner");
+  const sendBtn      = chatForm ? chatForm.querySelector(".chat-send-btn") : null;
+
+  const fileInput    = document.getElementById("chat-file-input");
+  const fileChip     = document.getElementById("chat-file-chip");
+  const fileChipName = document.getElementById("chat-file-chip-name");
+  const fileRemove   = document.getElementById("chat-file-remove");
+
+  /* ===== 메시지 버블 ===== */
+
+  function appendMessage(text, role) {
+    const bubble = document.createElement("div");
+    bubble.className = "chat-bubble " + role;
+    bubble.textContent = text;
+    chatMessages.appendChild(bubble);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  /* ===== 로딩 상태 ===== */
+
+  function setLoading(on) {
+    chatSpinner.classList.toggle("active", on);
+    if (sendBtn)    sendBtn.disabled = on;
+    if (chatInput)  chatInput.disabled = on;
+    if (fileInput)  fileInput.disabled = on;
+  }
+
+  /* ===== 파일 칩 관리 ===== */
+
+  function showFileChip(name) {
+    fileChipName.textContent = name;
+    fileChip.hidden = false;
+  }
+
+  function clearFile() {
+    if (fileInput)  fileInput.value = "";
+    if (fileChip)   fileChip.hidden = true;
+    if (fileChipName) fileChipName.textContent = "";
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", function () {
+      const file = fileInput.files[0];
+      if (file) {
+        showFileChip(file.name);
+      } else {
+        clearFile();
+      }
+    });
+  }
+
+  if (fileRemove) {
+    fileRemove.addEventListener("click", function () {
+      clearFile();
+    });
+  }
+
+  /* ===== 파일 업로드 ===== */
+
+  async function uploadFile(file) {
+    appendMessage("📎 " + file.name + " 업로드 중…", "system");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/upload", { method: "POST", body: formData });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data.ok) {
+      appendMessage("✅ " + data.filename + " 업로드 완료", "system");
+      clearFile();
+      return true;
+    } else {
+      appendMessage("❌ 업로드 실패: " + (data.error || "알 수 없는 오류"), "error");
+      return false;
+    }
+  }
+
+  /* ===== 채팅 전송 ===== */
+
+  async function sendMessage(message) {
+    appendMessage(message, "user");
+
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      appendMessage(
+        "오류: 서버 응답 " + res.status + (err.error ? " — " + err.error : ""),
+        "error"
+      );
+      return;
+    }
+
+    const data = await res.json();
+    if (data.error) {
+      appendMessage(data.reply || "알 수 없는 오류가 발생했습니다.", "error");
+    } else {
+      appendMessage(data.reply || "(응답 없음)", "assistant");
+    }
+  }
+
+  /* ===== 폼 제출 ===== */
+
+  if (chatForm) {
+    chatForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const file    = fileInput && fileInput.files[0];
+      const message = chatInput ? chatInput.value.trim() : "";
+
+      if (!file && !message) return;
+
+      setLoading(true);
+
+      try {
+        if (file) {
+          const ok = await uploadFile(file);
+          if (!ok) return;
+        }
+
+        if (message) {
+          chatInput.value = "";
+          await sendMessage(message);
+        }
+      } catch (err) {
+        appendMessage("네트워크 오류: " + err.message, "error");
+      } finally {
+        setLoading(false);
+        if (chatInput) chatInput.focus();
+      }
+    });
+
+    if (chatInput) {
+      chatInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          chatForm.dispatchEvent(new Event("submit", { cancelable: true }));
+        }
+      });
+    }
+  }
+})();

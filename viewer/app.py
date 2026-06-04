@@ -2,13 +2,16 @@
 viewer/app.py — Flask 기반 Wiki 뷰어
 
 라우팅:
-  GET /               → 첫 번째 페이지로 redirect, 페이지 없으면 빈 상태
-  GET /page/<slug>    → Markdown 렌더링 페이지 표시
+  GET  /               → 첫 번째 페이지로 redirect, 페이지 없으면 빈 상태
+  GET  /page/<slug>    → Markdown 렌더링 페이지 표시
+  POST /upload         → 파일 업로드 후 raw/ 저장 (V-03)
+  POST /chat           → claude -p subprocess 채팅 응답 (V-04)
 """
 
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -19,9 +22,9 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import markdown2
-from flask import Flask, redirect, render_template, url_for
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
-from mcp_server.wiki_store import _parse_frontmatter, wiki_list, wiki_read
+from mcp_server.wiki_store import _parse_frontmatter, raw_save, wiki_list, wiki_read
 
 app = Flask(__name__)
 
@@ -160,6 +163,97 @@ def page(slug: str):
         title=meta.get("title", slug),
         not_found=False,
     )
+
+
+@app.route("/upload", methods=["POST"])
+def upload():
+    """파일 업로드 라우트 (V-03).
+
+    multipart/form-data 로 파일을 수신하여 raw/ 디렉토리에 저장.
+    """
+    if "file" not in request.files:
+        return jsonify({"ok": False, "error": "파일이 없습니다."}), 400
+
+    f = request.files["file"]
+    if not f or f.filename == "":
+        return jsonify({"ok": False, "error": "파일명이 비어 있습니다."}), 400
+
+    filename = f.filename
+    raw_save(filename, f.read())
+    return jsonify({"ok": True, "filename": filename})
+
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    """채팅 라우트 (V-04).
+
+    요청 JSON {"message": "..."} 을 claude -p subprocess 로 전달하고
+    {"reply": "..."} 를 반환.
+    """
+    data = request.get_json(silent=True) or {}
+    message = data.get("message", "").strip()
+    if not message:
+        return jsonify({"ok": False, "error": "메시지가 비어 있습니다."}), 400
+
+    try:
+        # Windows에서 claude는 .cmd 래퍼로 설치됨
+        # --allowedTools: 비대화형 subprocess에서 필요한 MCP 도구만 허용
+        claude_cmd = "claude.cmd" if sys.platform == "win32" else "claude"
+        _ALLOWED_TOOLS = ",".join([
+            "mcp__llm-wiki__wiki_list",
+            "mcp__llm-wiki__wiki_read",
+            "mcp__llm-wiki__wiki_write",
+            "mcp__llm-wiki__wiki_search",
+            "mcp__llm-wiki__wiki_delete",
+            "mcp__llm-wiki__raw_save",
+            "mcp__llm-wiki__raw_read",
+        ])
+        result = subprocess.run(
+            [claude_cmd, "-p", message, "--allowedTools", _ALLOWED_TOOLS],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            cwd=str(_PROJECT_ROOT),
+            timeout=120,
+        )
+        reply = result.stdout.strip() or result.stderr.strip() or "(응답 없음)"
+        return jsonify({"reply": reply})
+    except subprocess.TimeoutExpired:
+        return jsonify({"reply": "오류: 응답 시간이 초과되었습니다 (120초).", "error": True})
+    except FileNotFoundError:
+        return jsonify({"reply": "오류: claude CLI를 찾을 수 없습니다. claude 명령어가 PATH에 있는지 확인하세요.", "error": True})
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"reply": f"오류: {exc}", "error": True})
+
+
+@app.route("/api/page/<path:slug>")
+def api_page(slug: str):
+    """AJAX 네비게이션용 JSON 엔드포인트 — 본문 HTML만 반환."""
+    try:
+        raw_content = wiki_read(slug)
+    except FileNotFoundError:
+        html = render_template(
+            "_content.html",
+            content=f"<p>페이지를 찾을 수 없습니다: <code>{slug}</code></p>",
+            not_found=True,
+            meta={},
+        )
+        return jsonify({"ok": False, "slug": slug, "title": slug, "html": html}), 404
+
+    meta, body = _strip_frontmatter(raw_content)
+    html_content = _render_markdown(body)
+    html = render_template(
+        "_content.html",
+        content=html_content,
+        not_found=False,
+        meta=meta,
+    )
+    return jsonify({
+        "ok": True,
+        "slug": slug,
+        "title": meta.get("title", slug),
+        "html": html,
+    })
 
 
 if __name__ == "__main__":

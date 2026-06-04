@@ -6,6 +6,7 @@ viewer/app.py — Flask 기반 Wiki 뷰어
   GET  /page/<slug>    → Markdown 렌더링 페이지 표시
   POST /upload         → 파일 업로드 후 raw/ 저장 (V-03)
   POST /chat           → claude -p subprocess 채팅 응답 (V-04)
+  GET  /api/search     → 키워드 검색 결과 JSON 반환 (V-05)
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 import markdown2
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
-from mcp_server.wiki_store import _parse_frontmatter, raw_save, wiki_list, wiki_read
+from mcp_server.wiki_store import _parse_frontmatter, raw_save, wiki_list, wiki_read, wiki_search
 
 app = Flask(__name__)
 
@@ -254,6 +255,23 @@ def api_page(slug: str):
         "title": meta.get("title", slug),
         "html": html,
     })
+
+
+@app.route("/api/search")
+def api_search():
+    """키워드 검색 엔드포인트 (V-05).
+
+    GET /api/search?q=<query>
+    Returns: [{"slug": ..., "title": ..., "excerpt": ...}, ...]
+    """
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify([])
+
+    results = wiki_search(query)
+    # 내부 관리 slug(index, log)는 결과에서 제외
+    results = [r for r in results if r["slug"] not in _HIDDEN_SLUGS]
+    return jsonify(results)
 
 
 if __name__ == "__main__":

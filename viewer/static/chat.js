@@ -80,6 +80,101 @@
     }
   })();
 
+  /* ===== 키워드 검색 (V-05) ===== */
+
+  const searchInput   = document.getElementById("search-input");
+  const searchResults = document.getElementById("search-results");
+
+  function renderSearchResults(items) {
+    if (!searchResults) return;
+
+    searchResults.innerHTML = "";
+
+    if (items.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "search-no-results";
+      empty.textContent = "검색 결과가 없습니다.";
+      searchResults.appendChild(empty);
+    } else {
+      items.forEach(function (item) {
+        const el = document.createElement("div");
+        el.className = "search-result-item";
+        el.setAttribute("tabindex", "0");
+        el.setAttribute("role", "button");
+        el.setAttribute("aria-label", item.title);
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "search-result-title";
+        titleEl.textContent = item.title;
+
+        const excerptEl = document.createElement("div");
+        excerptEl.className = "search-result-excerpt";
+        excerptEl.textContent = item.excerpt || "";
+
+        el.appendChild(titleEl);
+        el.appendChild(excerptEl);
+
+        function selectItem() {
+          navigateTo(item.slug, true);
+          searchInput.value = "";
+          searchResults.hidden = true;
+        }
+
+        el.addEventListener("click", selectItem);
+        el.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            selectItem();
+          }
+        });
+
+        searchResults.appendChild(el);
+      });
+    }
+
+    searchResults.hidden = false;
+  }
+
+  let _searchTimer = null;
+
+  if (searchInput) {
+    searchInput.addEventListener("input", function () {
+      const query = searchInput.value.trim();
+
+      clearTimeout(_searchTimer);
+
+      if (!query) {
+        if (searchResults) searchResults.hidden = true;
+        return;
+      }
+
+      _searchTimer = setTimeout(async function () {
+        try {
+          const res  = await fetch("/api/search?q=" + encodeURIComponent(query));
+          const data = await res.json();
+          renderSearchResults(data);
+        } catch (err) {
+          console.error("Search error:", err);
+        }
+      }, 300);
+    });
+
+    // 검색창 바깥 클릭 시 결과 숨김
+    document.addEventListener("click", function (e) {
+      if (searchResults && !searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.hidden = true;
+      }
+    });
+
+    // Escape 키로 결과 닫기
+    searchInput.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        searchResults.hidden = true;
+        searchInput.blur();
+      }
+    });
+  }
+
   /* ===== 채팅 패널 ===== */
 
   const chatForm     = document.getElementById("chat-form");

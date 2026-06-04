@@ -13,6 +13,18 @@
       <div class="sidebar-header">
         <a href="{{ url_for('index') }}" class="sidebar-logo">LLM Wiki</a>
       </div>
+      <!-- 검색창 (V-05) -->
+      <div class="search-box">
+        <input
+          type="search"
+          id="search-input"
+          class="search-input"
+          placeholder="페이지 검색…"
+          aria-label="Wiki 페이지 검색"
+          autocomplete="off"
+        />
+        <div class="search-results" id="search-results" hidden></div>
+      </div>
       <nav class="sidebar-nav">
         {% if sidebar %}
           {% for group in sidebar %}

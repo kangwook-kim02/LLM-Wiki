@@ -1056,3 +1056,48 @@ orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 �
 - `viewer/templates/layout.html` — 검색 UI 추가
 - `viewer/static/style.css` — 검색 스타일 추가
 - `viewer/static/chat.js` — 검색 로직 추가
+
+---
+
+## Round 28 — wiki-check 스킬 신설 및 CLAUDE.md 문서 정합성 정리
+
+**날짜**: 2026-06-04
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+M4 완료 후 Wiki 콘텐츠 상태를 자연어로 점검할 수 있는 스킬이 필요하다는 요청. 동시에 CLAUDE.md에 Streamlit·FastMCP 등 구현 변경 이전의 표현이 남아 있어 정리.
+
+### 결정 사항
+
+**Q1. wiki-check 스킬의 점검 대상?**
+
+- **결론**: Wiki 콘텐츠 데이터(페이지 수·카테고리·frontmatter·내부 링크·검색 기능)를 대상으로 한다.
+- **근거**: 기존 `/health` 커맨드는 하네스 파일 구조(스킬·에이전트·CLAUDE.md 일관성)를 점검. wiki-check는 그와 별개로 Wiki 데이터 품질을 점검하는 역할로 명확히 분리.
+
+**Q2. wiki-check 스킬의 도구 사용 원칙?**
+
+- **결론**: 모든 조회를 MCP 도구(`wiki_list`, `wiki_read`, `wiki_search`)로만 수행. 내장 Read 도구 사용 금지.
+- **근거**: CLAUDE.md 운영 규칙 1번 유지 — 에이전트는 파일시스템에 직접 접근하지 않는다.
+
+**Q3. wiki-check 결과 처리 — 자동 수정 vs 보고만?**
+
+- **결론**: 보고만 수행. 수정 금지.
+- **근거**: 점검과 수정을 분리해야 사용자가 판단 후 `wiki-edit` 스킬로 선택적으로 수정 가능. 자동 수정은 의도치 않은 페이지 변경 위험이 있음.
+
+**Q4. CLAUDE.md 잔재 표현 정리 범위?**
+
+- **결론**: 구현과 직접 관련된 설명 3곳만 수정.
+  - `mcp_server/` 설명: "FastMCP 기반" → "mcp[cli] 기반"
+  - `viewer/` 설명: "Streamlit Wiki 뷰어 (구현 예정)" → "Flask Wiki 뷰어 (3패널)"
+  - `raw/` 설명: "Streamlit 업로드로만 추가" → "Flask 채팅 패널 업로드로만 추가"
+  - `raw_save` MCP 도구 설명: "Streamlit 호출" → "Flask viewer 호출"
+
+### 구현 결과
+
+- `.claude/skills/wiki-check/SKILL.md` — 신규 생성 (5단계 점검 절차)
+- `CLAUDE.md` — wiki-check 스킬 테이블 등록, Streamlit·FastMCP 잔재 표현 4곳 수정
+
+**영향 받은 파일:**
+- `.claude/skills/wiki-check/SKILL.md` — 신규 생성
+- `CLAUDE.md` — 스킬 테이블 추가, 문서 표현 정리

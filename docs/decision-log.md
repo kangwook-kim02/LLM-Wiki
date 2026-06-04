@@ -1005,3 +1005,54 @@ orchestrate 스킬 Phase 3(PASS 처리)에서 커밋 직후 `gh pr create`를 �
 - `viewer/templates/page.html` — _content.html include로 교체
 - `viewer/app.py` — /api/page/ 엔드포인트 추가
 - `viewer/static/chat.js` — AJAX 네비게이션 로직 추가
+
+---
+
+## Round 27 — 키워드 검색 구현 설계 결정
+
+**날짜**: 2026-06-04
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+이슈 #8 작업: 사이드바 키워드 검색 기능 구현 (V-05)
+
+### 결정 사항
+
+**Q1. 검색 백엔드 — MCP `wiki_search` 호출 vs 직접 import?**
+
+- **결론**: `wiki_store.wiki_search()` 직접 import 사용. MCP 경유 없음.
+- **근거**: Round 20 방침 유지 — 뷰어 내부 열람·검색은 응답 속도 최적화를 위해 MCP 우회.
+
+**Q2. 검색 UX — 버튼 클릭 vs 실시간 디바운스?**
+
+- **결론**: 300ms 디바운스 실시간 검색. 별도 전송 버튼 없음.
+- **근거**: 검색 결과가 수백 ms 내에 반환되므로 버튼이 불필요. 타이핑 중 즉시 피드백이 UX에 더 자연스러움.
+
+**Q3. 결과 클릭 시 페이지 이동 방식?**
+
+- **결론**: Round 26에서 확립한 `navigateTo(slug)` AJAX 함수 그대로 재사용.
+- **근거**: 전체 페이지 리로드 없이 본문만 교체되어 채팅 패널 상태가 유지됨. 코드 중복 없음.
+
+**Q4. 결과 표시 영역 위치?**
+
+- **결론**: 사이드바 검색 입력창 아래 `position: absolute` 드롭다운으로 표시. `z-index: 100`으로 nav 목록 위에 오버레이.
+- **근거**: 별도 패널 분할 없이 공간 효율적으로 결과 표시 가능. 외부 클릭·Escape 키로 닫힘.
+
+**Q5. 내부 slug(`index`, `log`) 처리?**
+
+- **결론**: 기존 `_HIDDEN_SLUGS` 상수 재사용하여 검색 결과에서도 제외.
+- **근거**: 사이드바 네비게이션과 동일한 필터링 기준을 검색에도 적용하여 일관성 유지.
+
+### 구현 결과
+
+- `viewer/app.py` — `GET /api/search?q=<query>` 엔드포인트 추가
+- `viewer/templates/layout.html` — 사이드바 헤더 아래 검색 입력창 + 결과 영역 추가
+- `viewer/static/style.css` — 검색창, 드롭다운 결과 스타일 추가
+- `viewer/static/chat.js` — 디바운스 검색 로직, 결과 렌더링, 클릭 핸들러 추가
+
+**영향 받은 파일:**
+- `viewer/app.py` — /api/search 엔드포인트 추가
+- `viewer/templates/layout.html` — 검색 UI 추가
+- `viewer/static/style.css` — 검색 스타일 추가
+- `viewer/static/chat.js` — 검색 로직 추가

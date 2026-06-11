@@ -95,23 +95,22 @@ pip install -r requirements.txt
 
 ### 1. MCP 서버 등록
 
-`.claude/settings.json`과 `.mcp.json` 두 파일 모두에 Python 및 프로젝트 **절대경로**를 환경에 맞게 수정합니다.
+`.env.example`을 복사하여 `.env`를 생성한 뒤, 현재 환경에 맞는 값을 채우고 `setup.py`를 실행합니다.
 
-```json
-{
-  "mcpServers": {
-    "llm-wiki": {
-      "command": "<python 절대경로>",
-      "args": ["<프로젝트 절대경로>/mcp_server/server.py"],
-      "env": {
-        "PYTHONPATH": "<프로젝트 절대경로>/mcp_server"
-      }
-    }
-  }
-}
+```bash
+# 1) .env 생성
+cp .env.example .env          # macOS/Linux
+copy .env.example .env        # Windows
+
+# 2) .env 편집 — PYTHON_CMD, PROJECT_ROOT 를 실제 경로로 수정
+#    예) PYTHON_CMD=C:\Python313\python.exe
+#        PROJECT_ROOT=C:\Users\yourname\LLM-Wiki
+
+# 3) 설정 자동 생성
+python setup.py
 ```
 
-> `.claude/settings.json` — Claude Code CLI용 / `.mcp.json` — Flask 뷰어 채팅 패널용
+`setup.py`는 `.env`를 읽어 `.mcp.json`(Flask 뷰어 채팅 패널용)과 `.claude/settings.json`(Claude Code CLI용)을 자동으로 생성합니다. 두 파일은 `.gitignore`에 등록되어 있으므로 커밋되지 않습니다.
 
 ### 2. Claude Code 실행
 

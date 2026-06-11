@@ -6,6 +6,10 @@ __pycache__/
 venv/
 .env
 
+# 환경별 자동 생성 파일 (setup.py로 생성)
+.mcp.json
+.claude/settings.json
+
 # raw 소스 파일 (용량 크고 민감할 수 있음)
 raw/*
 !raw/README.md

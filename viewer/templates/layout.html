@@ -55,7 +55,10 @@
 
     <!-- 채팅 패널 (V-04) -->
     <section class="chat-panel" aria-label="채팅">
-      <div class="chat-panel-header">Claude 채팅</div>
+      <div class="chat-panel-header">
+        <span class="chat-panel-title">Claude 채팅</span>
+        <span class="chat-token-usage" id="chat-token-usage" aria-label="토큰 사용량"></span>
+      </div>
 
       <div class="chat-messages" id="chat-messages" aria-live="polite">
         <div class="chat-bubble assistant">

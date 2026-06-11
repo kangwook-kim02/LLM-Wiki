@@ -188,6 +188,19 @@
   const fileChipName = document.getElementById("chat-file-chip-name");
   const fileRemove   = document.getElementById("chat-file-remove");
 
+  const tokenUsageEl = document.getElementById("chat-token-usage");
+
+  /* ===== 세션 토큰 누적 ===== */
+
+  const sessionTokens = { input: 0, output: 0 };
+
+  function updateTokenDisplay() {
+    if (!tokenUsageEl) return;
+    tokenUsageEl.textContent =
+      "입력 " + sessionTokens.input.toLocaleString() +
+      " · 출력 " + sessionTokens.output.toLocaleString();
+  }
+
   /* ===== 메시지 버블 ===== */
 
   function appendMessage(text, role) {
@@ -301,6 +314,11 @@
     }
 
     const data = await res.json();
+    if (data.usage) {
+      sessionTokens.input  += data.usage.input  || 0;
+      sessionTokens.output += data.usage.output || 0;
+      updateTokenDisplay();
+    }
     if (data.error) {
       appendMessage(data.reply || "알 수 없는 오류가 발생했습니다.", "error");
     } else {

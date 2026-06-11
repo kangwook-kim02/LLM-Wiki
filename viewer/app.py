@@ -11,6 +11,7 @@ viewer/app.py — Flask 기반 Wiki 뷰어
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -210,15 +211,30 @@ def chat():
             "mcp__llm-wiki__raw_read",
         ])
         result = subprocess.run(
-            [claude_cmd, "-p", message, "--allowedTools", _ALLOWED_TOOLS],
+            [claude_cmd, "-p", message, "--allowedTools", _ALLOWED_TOOLS, "--output-format", "json"],
             capture_output=True,
             text=True,
             encoding="utf-8",
             cwd=str(_PROJECT_ROOT),
             timeout=120,
         )
-        reply = result.stdout.strip() or result.stderr.strip() or "(응답 없음)"
-        return jsonify({"reply": reply})
+        raw_output = result.stdout.strip()
+        try:
+            parsed = json.loads(raw_output)
+            reply = parsed.get("result", "") or result.stderr.strip() or "(응답 없음)"
+            usage_data = parsed.get("usage", {})
+            usage = {
+                "input": usage_data.get("input_tokens", 0),
+                "output": usage_data.get("output_tokens", 0),
+            }
+        except (json.JSONDecodeError, AttributeError):
+            # JSON 파싱 실패 시 B안(글자 수 기반 추정)으로 폴백
+            reply = raw_output or result.stderr.strip() or "(응답 없음)"
+            usage = {
+                "input": len(message) // 4,
+                "output": len(reply) // 4,
+            }
+        return jsonify({"reply": reply, "usage": usage})
     except subprocess.TimeoutExpired:
         return jsonify({"reply": "오류: 응답 시간이 초과되었습니다 (120초).", "error": True})
     except FileNotFoundError:

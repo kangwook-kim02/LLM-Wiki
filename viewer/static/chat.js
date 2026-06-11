@@ -199,16 +199,43 @@
   }
 
   function appendThinkingBubble() {
+    const messages = ["Thinking...", "Almost there...", "Just a moment..."];
+    const thresholds = [0, 10000, 25000];
+
     const bubble = document.createElement("div");
     bubble.className = "chat-bubble thinking";
+
+    const textEl = document.createElement("span");
+    textEl.className = "thinking-text";
+    textEl.textContent = messages[0];
+    bubble.appendChild(textEl);
+
     for (let i = 0; i < 3; i++) {
       const dot = document.createElement("span");
       dot.className = "dot";
       bubble.appendChild(dot);
     }
+
     chatMessages.appendChild(bubble);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    return bubble;
+
+    const start = Date.now();
+    const intervalId = setInterval(function () {
+      const elapsed = Date.now() - start;
+      for (let i = thresholds.length - 1; i >= 0; i--) {
+        if (elapsed >= thresholds[i]) {
+          textEl.textContent = messages[i];
+          break;
+        }
+      }
+    }, 1000);
+
+    return {
+      remove() {
+        clearInterval(intervalId);
+        bubble.remove();
+      }
+    };
   }
 
   /* ===== 로딩 상태 ===== */

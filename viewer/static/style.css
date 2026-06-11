@@ -488,8 +488,13 @@ html, body {
   border-bottom-left-radius: 4px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   padding: 10px 14px;
+}
+
+.thinking-text {
+  font-size: 0.82rem;
+  color: #6e7781;
 }
 
 .dot {

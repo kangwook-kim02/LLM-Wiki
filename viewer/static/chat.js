@@ -198,53 +198,35 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  function appendThinkingBubble() {
-    const messages = ["Thinking...", "Almost there...", "Just a moment..."];
-    const thresholds = [0, 10000, 25000];
+  /* ===== 로딩 상태 (스피너 텍스트 사이클링 포함) ===== */
 
-    const bubble = document.createElement("div");
-    bubble.className = "chat-bubble thinking";
-
-    const textEl = document.createElement("span");
-    textEl.className = "thinking-text";
-    textEl.textContent = messages[0];
-    bubble.appendChild(textEl);
-
-    for (let i = 0; i < 3; i++) {
-      const dot = document.createElement("span");
-      dot.className = "dot";
-      bubble.appendChild(dot);
-    }
-
-    chatMessages.appendChild(bubble);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    const start = Date.now();
-    const intervalId = setInterval(function () {
-      const elapsed = Date.now() - start;
-      for (let i = thresholds.length - 1; i >= 0; i--) {
-        if (elapsed >= thresholds[i]) {
-          textEl.textContent = messages[i];
-          break;
-        }
-      }
-    }, 1000);
-
-    return {
-      remove() {
-        clearInterval(intervalId);
-        bubble.remove();
-      }
-    };
-  }
-
-  /* ===== 로딩 상태 ===== */
+  const spinnerText = document.getElementById("chat-spinner-text");
+  const _thinkingMessages   = ["Thinking...", "Almost there...", "Just a moment..."];
+  const _thinkingThresholds = [0, 10000, 25000];
+  let _thinkingTimer = null;
 
   function setLoading(on) {
     chatSpinner.classList.toggle("active", on);
-    if (sendBtn)    sendBtn.disabled = on;
-    if (chatInput)  chatInput.disabled = on;
-    if (fileInput)  fileInput.disabled = on;
+    if (sendBtn)   sendBtn.disabled = on;
+    if (chatInput) chatInput.disabled = on;
+    if (fileInput) fileInput.disabled = on;
+
+    if (on) {
+      const start = Date.now();
+      if (spinnerText) spinnerText.textContent = _thinkingMessages[0];
+      _thinkingTimer = setInterval(function () {
+        const elapsed = Date.now() - start;
+        for (let i = _thinkingThresholds.length - 1; i >= 0; i--) {
+          if (elapsed >= _thinkingThresholds[i]) {
+            if (spinnerText) spinnerText.textContent = _thinkingMessages[i];
+            break;
+          }
+        }
+      }, 1000);
+    } else {
+      clearInterval(_thinkingTimer);
+      if (spinnerText) spinnerText.textContent = "";
+    }
   }
 
   /* ===== 파일 칩 관리 ===== */
@@ -302,15 +284,12 @@
 
   async function sendMessage(message) {
     appendMessage(message, "user");
-    const thinkingBubble = appendThinkingBubble();
 
     const res = await fetch("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message }),
     });
-
-    thinkingBubble.remove();
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

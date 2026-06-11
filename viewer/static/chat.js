@@ -198,6 +198,19 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
+  function appendThinkingBubble() {
+    const bubble = document.createElement("div");
+    bubble.className = "chat-bubble thinking";
+    for (let i = 0; i < 3; i++) {
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      bubble.appendChild(dot);
+    }
+    chatMessages.appendChild(bubble);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return bubble;
+  }
+
   /* ===== 로딩 상태 ===== */
 
   function setLoading(on) {
@@ -262,12 +275,15 @@
 
   async function sendMessage(message) {
     appendMessage(message, "user");
+    const thinkingBubble = appendThinkingBubble();
 
     const res = await fetch("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message }),
     });
+
+    thinkingBubble.remove();
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

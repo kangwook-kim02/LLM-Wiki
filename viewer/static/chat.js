@@ -198,13 +198,35 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  /* ===== 로딩 상태 ===== */
+  /* ===== 로딩 상태 (스피너 텍스트 사이클링 포함) ===== */
+
+  const spinnerText = document.getElementById("chat-spinner-text");
+  const _thinkingMessages   = ["Thinking...", "Almost there...", "Just a moment..."];
+  const _thinkingThresholds = [0, 10000, 25000];
+  let _thinkingTimer = null;
 
   function setLoading(on) {
     chatSpinner.classList.toggle("active", on);
-    if (sendBtn)    sendBtn.disabled = on;
-    if (chatInput)  chatInput.disabled = on;
-    if (fileInput)  fileInput.disabled = on;
+    if (sendBtn)   sendBtn.disabled = on;
+    if (chatInput) chatInput.disabled = on;
+    if (fileInput) fileInput.disabled = on;
+
+    if (on) {
+      const start = Date.now();
+      if (spinnerText) spinnerText.textContent = _thinkingMessages[0];
+      _thinkingTimer = setInterval(function () {
+        const elapsed = Date.now() - start;
+        for (let i = _thinkingThresholds.length - 1; i >= 0; i--) {
+          if (elapsed >= _thinkingThresholds[i]) {
+            if (spinnerText) spinnerText.textContent = _thinkingMessages[i];
+            break;
+          }
+        }
+      }, 1000);
+    } else {
+      clearInterval(_thinkingTimer);
+      if (spinnerText) spinnerText.textContent = "";
+    }
   }
 
   /* ===== 파일 칩 관리 ===== */

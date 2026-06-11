@@ -110,7 +110,7 @@ copy .env.example .env        # Windows
 python setup.py
 ```
 
-`setup.py`는 `.env`를 읽어 `.mcp.json`(Flask 뷰어 채팅 패널용)과 `.claude/settings.json`(Claude Code CLI용)을 자동으로 생성합니다. 두 파일은 `.gitignore`에 등록되어 있으므로 커밋되지 않습니다.
+`setup.py`는 `.env`를 읽어 `.claude/settings.json`을 자동으로 생성합니다. 이 파일 하나로 Claude Code CLI와 Flask 뷰어 채팅 패널 모두에서 MCP 서버가 로드됩니다. `.gitignore`에 등록되어 있으므로 커밋되지 않습니다.
 
 ### 2. Claude Code 실행
 

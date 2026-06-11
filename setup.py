@@ -9,8 +9,7 @@ setup.py — LLM-Wiki 환경별 MCP 서버 설정 자동 생성 스크립트
        python setup.py
 
 생성되는 파일:
-    .mcp.json               — Flask 뷰어 채팅 패널용 MCP 서버 설정
-    .claude/settings.json   — Claude Code CLI용 MCP 서버 설정
+    .claude/settings.json   — Claude Code CLI 및 Flask 뷰어 채팅 패널 공용 MCP 서버 설정
 """
 
 import json
@@ -90,7 +89,6 @@ def main():
 
     config = build_mcp_config(python_cmd, root)
 
-    write_json(project_root / ".mcp.json", config)
     write_json(project_root / ".claude" / "settings.json", config)
 
     print()

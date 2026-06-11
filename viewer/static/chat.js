@@ -197,8 +197,8 @@
   function updateTokenDisplay() {
     if (!tokenUsageEl) return;
     tokenUsageEl.textContent =
-      "입력 " + sessionTokens.input.toLocaleString() +
-      " · 출력 " + sessionTokens.output.toLocaleString();
+      "입력 " + sessionTokens.input.toLocaleString() + " 토큰" +
+      " · 출력 " + sessionTokens.output.toLocaleString() + " 토큰";
   }
 
   /* ===== 메시지 버블 ===== */

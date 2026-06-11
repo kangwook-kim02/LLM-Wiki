@@ -1140,3 +1140,44 @@ M5(문서화) 단계에서 과제 제출 요건 충족을 위해 README.md를 �
 
 **영향 받은 파일:**
 - `README.md` — 전면 개편
+
+---
+
+## Round 30 — 토큰 사용량 표시 A/B안 결정
+
+**날짜**: 2026-06-11
+**참여자**: 사용자, Claude Sonnet 4.6
+
+### 맥락
+
+이슈 #21 작업 중 `claude -p` subprocess의 토큰 사용량 수집 방식을 결정함.
+
+### 결정 사항
+
+**Q1. 토큰 수집 방식 — A안(`--output-format json`) vs B안(글자 수 추정)?**
+
+- **결론**: A안 채택, B안을 폴백으로 유지.
+- **근거**: `claude -p --output-format json` 플래그 실행 결과, 응답이 `{"result": "...", "usage": {"input_tokens": N, "output_tokens": N}}` 형태의 JSON으로 반환됨을 확인. 정확한 수치 제공이 가능하므로 A안이 우선. JSON 파싱 실패(구버전 CLI 등) 시 `len(message) // 4`, `len(reply) // 4` 글자 수 기반 B안으로 자동 폴백.
+
+**Q2. 남은 사용량 표시 여부?**
+
+- **결론**: 세션 누적 사용량만 표시. 남은 사용량 조회 불가로 스펙 축소.
+- **근거**: Claude Code CLI에서 플랜별 잔여 한도를 조회하는 공개 인터페이스가 없음. 이슈 완료 기준에서 "조회 불가 시 세션 누적 사용량만 표시 (스펙 축소 허용)"를 명시하여 허용된 범위.
+
+**Q3. 오류 경로에서 usage 필드 생략?**
+
+- **결론**: `TimeoutExpired` / `FileNotFoundError` / 일반 예외 경로는 `usage` 필드 없이 오류 메시지만 반환. 프론트엔드에서 `if (data.usage)` 가드로 안전하게 처리.
+- **근거**: 오류 상황에서 토큰 추정값을 반환하는 것은 오해를 유발할 수 있음.
+
+### 구현 결과
+
+- `viewer/app.py` — `/chat` 라우트에 `--output-format json` 플래그 추가, A안 파싱 + B안 폴백
+- `viewer/templates/layout.html` — `chat-panel-header`를 flex 구조로 변경, 토큰 표시 span 추가
+- `viewer/static/style.css` — 헤더 flex 레이아웃 및 토큰 표시 스타일 추가
+- `viewer/static/chat.js` — `sessionTokens` 세션 누적 변수 및 `updateTokenDisplay()` 함수 추가
+
+**영향 받은 파일:**
+- `viewer/app.py`
+- `viewer/templates/layout.html`
+- `viewer/static/style.css`
+- `viewer/static/chat.js`
